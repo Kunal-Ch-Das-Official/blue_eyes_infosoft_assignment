@@ -2,6 +2,7 @@ import "dotenv/config";
 
 const environment = {
   port: process.env.PORT || 3000,
+  nodeEnv: process.env.NODE_ENVIRONMENT as string || "development",
 
   cloudinary_name: process.env.CLOUDINARY_NAME || "",
   cloudinary_api_key: process.env.CLOUDINARY_API_KEY || "",
@@ -13,6 +14,7 @@ const environment = {
   smtp_port: process.env.SMTP_PORT || 500,
   smtp_sender: process.env.SMTP_SENDER || "",
   smtp_password: process.env.SMTP_PASS || "",
+  jwt_secret: process.env.JWT_SECRET as string || "",
 };
 
 const envConfig = Object.freeze(environment);

@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import envConfig from "../config/envConfig";
+import envConfig from "../../config/envConfig";
 
 interface OTPMailOptions {
   to: string;

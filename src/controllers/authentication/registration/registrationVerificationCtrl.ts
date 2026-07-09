@@ -11,7 +11,7 @@ import {
 import envConfig from "../../../config/envConfig";
 import redisClient from "../../../redis/redisClient";
 import prisma from "../../../../prisma";
-import successEmail from "../../../mail-engines/successEmail";
+import successEmail from "../../../services/emails/successEmail";
 import { successRes } from "../../../utils/responses/successRes";
 
 const registrationVerificationCtrl = async (

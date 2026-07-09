@@ -12,25 +12,24 @@ import {
   internalServerError,
   notImplementedError,
 } from "../../../utils/responses/serverError";
-import sendVerificationOTP from "../../../mail-engines/sendVerificationOTP";
 import { successRes } from "../../../utils/responses/successRes";
+import sendVerificationOTP from "../../../services/emails/sendVerificationOTP";
 
 const registrationInitCtrl = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
+  const {role}:{role?: "ADMIN" | "USER"} = req.query;
   const {
     fullName,
     emailId,
     password,
     confirmPassword,
-    role,
   }: {
     fullName: string;
     emailId: string;
     password: string;
     confirmPassword: string;
-    role: "ADMIN" | "USER";
   } = req.body;
 
   if (!fullName && !emailId && !password && !role) {
@@ -54,18 +53,19 @@ const registrationInitCtrl = async (
 
     const otp = crypto.randomInt(100000, 999999);
     const hashedPassword = await passwordSalting(password);
-
     const userDetails: {
       fullName: string;
       emailId: string;
       password: string;
-      role: "ADMIN" | "USER";
+      role?: "ADMIN" | "USER";
     } = {
       fullName,
       emailId,
       password: hashedPassword,
-      role,
+      role: role ?? "USER",
     };
+
+    console.log("userDetails", userDetails)
 
     // Save to redis
     const saveOtpToRedis = await redisClient.setex(
