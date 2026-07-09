@@ -5,6 +5,7 @@ import multer from "multer";
 import { createServer } from "http";
 import cors from "cors";
 import healthCheck from "./routes/healthCheck";
+import authenticationRouter from "./routes/authenticationRouter";
 
 const app: express.Application = express();
 const httpServer = createServer(app);
@@ -35,6 +36,20 @@ app.use(healthCheck);
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json("Welcome to sports club management system");
 });
+
+
+
+
+// --------------- Router Registration -------------------
+
+app.use("/api/v1/sports-club-crm/auth", authenticationRouter)
+
+
+
+
+
+
+
 
 // ---------------- ERROR HANDLER ----------------
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
