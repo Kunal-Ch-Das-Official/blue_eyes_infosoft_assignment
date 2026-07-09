@@ -9,6 +9,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
 
+    "types": ["node"],
     "typeRoots": ["./src/@types", "./node_modules/@types"]
   },
   "include": ["./**/*.ts", "./**/*.d.ts"],
