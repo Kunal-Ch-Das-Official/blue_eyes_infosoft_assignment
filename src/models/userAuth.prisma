@@ -8,6 +8,8 @@ model user_auth {
 
     createdAt      DateTime       @default(now())
     updatedAt      DateTime       @updatedAt
+
+    submittedDetails player_details[] @relation("SubmittedDataByUser")
 }
 
 enum Role {

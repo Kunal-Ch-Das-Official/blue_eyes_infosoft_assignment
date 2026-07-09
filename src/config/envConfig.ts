@@ -15,6 +15,7 @@ const environment = {
   smtp_sender: process.env.SMTP_SENDER || "",
   smtp_password: process.env.SMTP_PASS || "",
   jwt_secret: process.env.JWT_SECRET as string || "",
+  data_signature: process.env.DATA_SIGNATURE as string || "",
 };
 
 const envConfig = Object.freeze(environment);

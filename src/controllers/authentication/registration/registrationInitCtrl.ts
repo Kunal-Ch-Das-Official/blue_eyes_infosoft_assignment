@@ -65,7 +65,6 @@ const registrationInitCtrl = async (
       role: role ?? "USER",
     };
 
-    console.log("userDetails", userDetails)
 
     // Save to redis
     const saveOtpToRedis = await redisClient.setex(

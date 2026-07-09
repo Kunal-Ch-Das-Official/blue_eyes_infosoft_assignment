@@ -1,112 +1,126 @@
+
 datasource db {
   provider = "postgresql"
 }
 
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
   binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
   previewFeatures = []
 }
 
+
 model competition_played {
-  id              String  @id @unique @default(uuid())
-  competitionName String
-  sports          String
-  category        String?
-  position        String?
+   id String @id @default(uuid()) @unique
+   competitionName String
+   sports String
+   category String?
+   position String?
+   
+   createdAt      DateTime       @default(now())
+   updatedAt      DateTime       @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  playerId      String
-  playerDetails player_details @relation("CompetitionPlayed", fields: [playerId], references: [id], onDelete: Cascade)
+   playerId String
+   playerDetails player_details @relation("CompetitionPlayed", fields:[playerId], references:[id], onDelete: Cascade)
+    
 }
 
 model player_details {
-  id String @id @unique @default(uuid())
+        id String @id @default(uuid()) @unique
 
-  playerName  String
-  fathersName String
-  mothersName String
+        playerName String
+        fathersName String
+        mothersName String
 
-  dateOfBirth DateTime
-  currentAge  String
-  gender      Gender
+        dateOfBirth DateTime
+        currentAge String
+        gender Gender
 
-  playersPhotoUrl String
-  playersPhotoPId String
+        playersPhotoUrl String
+        playersPhotoPId String
 
-  emailAddress      String  @unique
-  contactNumber     String  @unique
-  alternateMobileNo String? @unique
+        emailAddress String @unique
+        contactNumber String @unique
+        alternateMobileNo String? @unique
 
-  nationality       String
-  bloodGroup        BloodGroup @default(NOT_KNOWN)
-  height            String?
-  weight            String?
-  governmentIdProof String?
+        
+        nationality String
+        bloodGroup BloodGroup @default(NOT_KNOWN)
+        height String?
+        weight String?
+        governmentIdProof String?
 
-  //? Address Details 
-  address         String
-  pinCode         String
-  stateOrProvince String
-  country         String
 
-  club   String
-  sports String
+       //? Address Details 
+        address String
+        pinCode String
+        stateOrProvince   String 
+        country String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+        club String
+        sports String
 
-  playerDocuments   players_document[]   @relation("PlayersDocument")
-  competitionPlayed competition_played[] @relation("CompetitionPlayed")
+        createdAt      DateTime       @default(now())
+        updatedAt      DateTime       @updatedAt
+
+        userId String
+        userReference     user_auth @relation("SubmittedDataByUser", fields: [userId], references: [id], onDelete: Cascade)
+
+        
+        playerDocuments   players_document[] @relation("PlayersDocument")
+        competitionPlayed competition_played[] @relation("CompetitionPlayed")
+        
+
 }
 
 enum BloodGroup {
-  A_POSITIVE
-  A_NEGATIVE
-  B_POSITIVE
-  B_NEGATIVE
-  A_B_POSITIVE
-  A_B_NEGATIVE
-  O_POSITIVE
-  O_NEGATIVE
-  NOT_KNOWN
+    A_POSITIVE
+    A_NEGATIVE
+    B_POSITIVE
+    B_NEGATIVE
+    A_B_POSITIVE
+    A_B_NEGATIVE
+    O_POSITIVE
+    O_NEGATIVE
+    NOT_KNOWN
 }
 
 enum Gender {
-  MALE
-  FEMALE
-  OTHERS
-}
+    MALE
+    FEMALE
+    OTHERS
+} 
 
 model players_document {
-  id String @id @unique @default(uuid())
+      id String @id @default(uuid()) @unique
 
-  documentName      String
-  documentType      String
-  documentUrl       String
-  documentAccessUrl String
-  documentSize      Decimal  @default(0.00) @db.Decimal(10, 2)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+      documentName String
+      documentType String
+      documentUrl String
+      documentAccessUrl String
+      documentSize Decimal  @db.Decimal(10, 2) @default(0.00)
+      createdAt      DateTime       @default(now())
+      updatedAt      DateTime       @updatedAt
 
-  playerId   String
-  playerData player_details @relation("PlayersDocument", fields: [playerId], references: [id], onDelete: Cascade)
-}
+      playerId String
+      playerData  player_details @relation("PlayersDocument", fields: [playerId], references: [id], onDelete: Cascade) 
+
+} 
 
 model user_auth {
-  id       String @id @unique @default(uuid())
-  fullName String
-  emailId  String @unique
-  password String
-  role     Role   @default(USER)
+    id String @id @default(uuid()) @unique
+    fullName String
+    emailId String @unique
+    password String
+    role Role @default(USER)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt      DateTime       @default(now())
+    updatedAt      DateTime       @updatedAt
+
+    submittedDetails player_details[] @relation("SubmittedDataByUser")
 }
 
 enum Role {
-  ADMIN
-  USER
+    ADMIN
+    USER
 }

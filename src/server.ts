@@ -6,6 +6,7 @@ import { createServer } from "http";
 import cors from "cors";
 import healthCheck from "./routes/healthCheck";
 import authenticationRouter from "./routes/authenticationRouter";
+import athleteRegistrationRouter from "./routes/athleteRegistrationRouter";
 
 const app: express.Application = express();
 const httpServer = createServer(app);
@@ -43,6 +44,7 @@ app.get("/", (req: Request, res: Response) => {
 // --------------- Router Registration -------------------
 
 app.use("/api/v1/sports-club-crm/auth", authenticationRouter)
+app.use("/api/v1/sports-club-crm/athlete-ops", athleteRegistrationRouter)
 
 
 
