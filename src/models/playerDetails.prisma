@@ -1,0 +1,61 @@
+model player_details {
+        id String @id @default(uuid()) @unique
+
+        playerName String
+        fathersName String
+        mothersName String
+
+        dateOfBirth DateTime
+        currentAge String
+        gender Gender
+
+        playersPhotoUrl String
+        playersPhotoPId String
+
+        emailAddress String @unique
+        contactNumber String @unique
+        alternateMobileNo String? @unique
+
+        
+        nationality String
+        bloodGroup BloodGroup @default(NOT_KNOWN)
+        height String?
+        weight String?
+        governmentIdProof String?
+
+
+       //? Address Details 
+        address String
+        pinCode String
+        stateOrProvince   String 
+        country String
+
+        club String
+        sports String
+
+        createdAt      DateTime       @default(now())
+        updatedAt      DateTime       @updatedAt
+
+        playerDocuments   players_document[] @relation("PlayersDocument")
+        competitionPlayed competition_played[] @relation("CompetitionPlayed")
+        
+
+}
+
+enum BloodGroup {
+    A_POSITIVE
+    A_NEGATIVE
+    B_POSITIVE
+    B_NEGATIVE
+    A_B_POSITIVE
+    A_B_NEGATIVE
+    O_POSITIVE
+    O_NEGATIVE
+    NOT_KNOWN
+}
+
+enum Gender {
+    MALE
+    FEMALE
+    OTHERS
+} 

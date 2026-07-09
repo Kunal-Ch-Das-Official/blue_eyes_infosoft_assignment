@@ -1,0 +1,14 @@
+model competition_played {
+   id String @id @default(uuid()) @unique
+   competitionName String
+   sports String
+   category String?
+   position String?
+   
+   createdAt      DateTime       @default(now())
+   updatedAt      DateTime       @updatedAt
+
+   playerId String
+   playerDetails player_details @relation("CompetitionPlayed", fields:[playerId], references:[id], onDelete: Cascade)
+    
+}
