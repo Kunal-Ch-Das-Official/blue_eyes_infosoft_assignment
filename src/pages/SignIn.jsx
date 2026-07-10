@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import InternalErrorRes from "../utils/toast/InternalErrorRes";
 import { primaryEmailSyntaxCheck } from "../helpers/primaryEmailSyntaxCheck";
 import envConfig from "../config/env.conf";
-import SignInForm from "../components/forms/SignInForm";
+import SignInForm from "../components/authentication/SignInForm";
 import showWarningToastQueue from "../helpers/showWarningToastQueue";
 import apiUrl from "../config/api.conf";
 

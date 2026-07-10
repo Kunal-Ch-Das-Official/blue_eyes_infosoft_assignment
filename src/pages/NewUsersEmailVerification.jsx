@@ -5,7 +5,7 @@ import { useSignUpDataStore } from "../stores/useSignUpDataStore";
 import apiUrl from "../config/api.conf";
 import envConfig from "../config/env.conf";
 import InternalErrorRes from "../utils/toast/InternalErrorRes";
-import OtpVerificationForm from "../components/forms/OtpVerificationForm";
+import OtpVerificationForm from "../components/authentication/OtpVerificationForm";
 import Notice from "../utils/modals/Notice";
 
 const NewUsersEmailVerification = () => {

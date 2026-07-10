@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import SignUpForm from "../components/forms/SignupForm";
+import SignUpForm from "../components/authentication/SignupForm";
 import showWarningToastQueue from "../helpers/showWarningToastQueue";
 import { primaryEmailSyntaxCheck } from "../helpers/primaryEmailSyntaxCheck";
 import envConfig from "../config/env.conf";
