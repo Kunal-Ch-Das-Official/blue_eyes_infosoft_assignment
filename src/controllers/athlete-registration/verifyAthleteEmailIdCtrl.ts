@@ -5,10 +5,9 @@ import {
   unprocessableRes,
 } from "../../utils/responses/clientError";
 import {
-  internalServerError,
-  notImplementedError,
+  internalServerError
 } from "../../utils/responses/serverError";
-import { success, z } from "zod";
+import { z } from "zod";
 import { TypeAthleteForm } from "../../types/TypeAthleteForm";
 import envConfig from "../../config/envConfig";
 import redisClient from "../../redis/redisClient";
@@ -37,21 +36,6 @@ export const athleteSchema = z.object({
     .regex(/^(?:\+91|91)?[6-9]\d{9}$/, {
       message: "Invalid mobile number",
     }),
-  nationality: z.string(),
-  bloodGroup: z.enum([
-    "A_POSITIVE",
-    "A_NEGATIVE",
-    "B_POSITIVE",
-    "B_NEGATIVE",
-    "A_B_POSITIVE",
-    "A_B_NEGATIVE",
-    "O_POSITIVE",
-    "O_NEGATIVE",
-    "NOT_KNOWN",
-  ]),
-  height: z.string().optional(),
-  weight: z.string().optional(),
-  governmentIdProofNo: z.string().optional(),
   address: z.string(),
   pinCode: z.string(),
   stateOrProvince: z.string(),
@@ -76,32 +60,73 @@ const verifyAthleteEmailIdCtrl = async (
   res: Response,
 ): Promise<void> => {
   const user = req.currentUser;
-  let otp: number;
 
-  let uploadPlayersDocument = [];
+
+  let writtenRedisKey: string | null = null;
+
+  let uploadPlayersDocument: any[] = [];
   let uploadProfilePhoto: any;
 
   if (!user)
     return unauthorizedRes(res, "Please sign in or sign up to proceed.");
 
+
+  // Reusable clean up function 
+  const cleanupBlobs = async () => {
+    try {
+      const docs = (uploadPlayersDocument ?? [])
+        .filter(Boolean)
+        .map((item) => item?.documentAccessUrl)
+        .filter(Boolean);
+
+      if (docs.length > 0) {
+        await multipleBlobDestroyer(docs);
+      }
+
+      if (uploadProfilePhoto?.documentAccessUrl) {
+        await blobDestroyer(uploadProfilePhoto.documentAccessUrl);
+      }
+    } catch (cleanupError) {
+      console.error("Blob cleanup failed:", cleanupError);
+    }
+  };
+
   try {
     if (user.role === "ADMIN")
       return unprocessableRes(res, "Admin are not allowed.");
 
+// Store files 
+    const files = (req.files ?? {}) as {
+      profile_photo?: Express.Multer.File[];
+      players_document?: Express.Multer.File[];
+    };
+
+    // array and object parsed 
+    let parsedFileTitles: unknown;
+    let parsedCompetitions: unknown;
+    try {
+      parsedFileTitles =
+        typeof req.body.fileTitles === "string"
+          ? JSON.parse(req.body.fileTitles)
+          : (req.body.fileTitles ?? []);
+
+      parsedCompetitions =
+        typeof req.body.competitions === "string"
+          ? JSON.parse(req.body.competitions)
+          : (req.body.competitions ?? []);
+    } catch {
+      return unprocessableRes(
+        res,
+        "fileTitles or competitions is not valid JSON.",
+      );
+    }
+
     // Parse multipart/form-data JSON fields
     const body: TypeAthleteForm = {
       ...req.body,
-
-      fileTitles:
-        typeof req.body.fileTitles === "string"
-          ? JSON.parse(req.body.fileTitles)
-          : (req.body.fileTitles ?? []),
-
-      competitions:
-        typeof req.body.competitions === "string"
-          ? JSON.parse(req.body.competitions)
-          : (req.body.competitions ?? []),
-    };
+      fileTitles: parsedFileTitles,
+      competitions: parsedCompetitions,
+    } as TypeAthleteForm;
 
     // Validate body
     const result = athleteSchema.safeParse(body);
@@ -116,18 +141,12 @@ const verifyAthleteEmailIdCtrl = async (
 
     const reqBody = result.data;
 
-    const files = req.files as {
-      profile_photo?: Express.Multer.File[];
-      players_document?: Express.Multer.File[];
-    };
-
     const profilePhoto = files.profile_photo?.[0];
     if (!profilePhoto) {
       return unprocessableRes(res, "Profile photo is required to proceed.");
     }
 
     const playersDocument = files.players_document ?? [];
-
     const titles = reqBody.fileTitles ?? [];
 
     if (playersDocument.length !== titles.length) {
@@ -146,23 +165,25 @@ const verifyAthleteEmailIdCtrl = async (
     if (!uploadProfilePhoto)
       return unprocessableRes(res, "Profile photo upload failed.");
 
-    // Upload all files in parallel
-    uploadPlayersDocument = await Promise.all(
+    
+    // Check all document is been uploaded or not
+    const settledUploads = await Promise.allSettled(
       playersDocument.map((file, index) =>
         uploadBlobData(file, "athletes/documents", titles[index]),
       ),
     );
+    uploadPlayersDocument = settledUploads.map((settled) =>
+      settled.status === "fulfilled" ? settled.value : null,
+    );
 
-    // Check upload failure
+    
+    // If any file failed then remove all uploaded docs 
     if (uploadPlayersDocument.some((file) => file === null)) {
-      uploadPlayersDocument.length > 0 &&
-        (await multipleBlobDestroyer(
-          uploadPlayersDocument.map((item) => item.documentAccessUrl),
-        ));
-
+      await cleanupBlobs();
       return unprocessableRes(res, "One or more files failed to upload.");
     }
 
+    // Put all data in a container 
     const stringifyObj = {
       reqBody: reqBody as TypeAthleteForm,
       uploadPlayersDocument: uploadPlayersDocument,
@@ -175,89 +196,83 @@ const verifyAthleteEmailIdCtrl = async (
       reqBody.emailAddress.trim().toLowerCase();
 
     if (emailMatches) {
-      // store to redis
+      // No OTP needed — the submitted email is the user's own verified
+      // account email. Store the pending submission directly.
+      const dataKey = `${envConfig.data_signature}:${user.id}`;
       const saveDataToRedis = await redisClient.setex(
-        `${envConfig.data_signature}:${user.id}`,
+        dataKey,
         5 * 60, // 5 minutes
         JSON.stringify(stringifyObj),
       );
 
+      // If not stored then cleanup upload docs 
       if (saveDataToRedis !== "OK") {
-        return notImplementedError(
+        await cleanupBlobs();
+        return internalServerError(
           res,
           "Data was not saved. Please try again.",
         );
-      } else {
-        return successRes(res, "Email already verified.");
       }
+
+      writtenRedisKey = dataKey;
+      return successRes(res, "Email already verified.");
     } else {
-      otp = crypto.randomInt(100000, 999999);
-      // Save to redis
+     
+      // OTP creating process 
+      const otp = crypto.randomInt(100000, 1_000_000);
+      const otpKey = `${envConfig.otp_security_key}:${user.id}:${otp}`;
+
       const saveOtpToRedis = await redisClient.setex(
-        `${envConfig.otp_security_key}:${user.id}:${otp}`,
+        otpKey,
         5 * 60, // 5 minutes
         JSON.stringify(stringifyObj),
       );
 
       if (saveOtpToRedis !== "OK") {
-        return notImplementedError(res, "OTP was not saved. Please try again.");
-      } else {
-        // ✅ Send OTP Email (wrapped in try-catch to handle async send errors gracefully)
-        try {
-          await sendVerificationOTP({
-            to: reqBody.emailAddress,
-            subject: "Your Email Verification Code",
-            html: `
+        await cleanupBlobs();
+        return internalServerError(
+          res,
+          "OTP was not saved. Please try again.",
+        );
+      }
+
+      writtenRedisKey = otpKey;
+
+      // Send OTP to the email 
+      try {
+        await sendVerificationOTP({
+          to: reqBody.emailAddress,
+          subject: "Your Email Verification Code",
+          html: `
           <p>Hello ${reqBody.playerName},</p>
           <p>Your verification code is: <strong>${otp}</strong></p>
           <p>This code will expire in 5 minutes.</p>
         `,
-          });
-        } catch (mailError) {
-          //! Cleanup functions
-          if (uploadPlayersDocument.length > 0) {
-            await multipleBlobDestroyer(
-              uploadPlayersDocument
-                .filter(Boolean)
-                .map((item) => item.documentAccessUrl),
-            );
-          }
-
-          if (uploadProfilePhoto?.documentAccessUrl) {
-            await blobDestroyer(uploadProfilePhoto.documentAccessUrl);
-          }
-          // Delete if failed
-          await redisClient.del(
-            `${envConfig.otp_security_key}:${user.id}:${otp}`,
-          );
-          console.error("Error sending verification email:", mailError);
-          return internalServerError(
-            res,
-            "Failed to send verification email. Please try again later.",
-          );
-        }
-
-        // ✅ Success response
-        return successRes(
+        });
+      } catch (mailError) {
+        await cleanupBlobs();
+        await redisClient.del(otpKey);
+        writtenRedisKey = null;
+        console.error("Error sending verification email:", mailError);
+        return internalServerError(
           res,
-          "Verification code sent successfully to your email.",
+          "Failed to send verification email. Please try again later.",
         );
       }
-    }
-  } catch (error: unknown) {
-    //! Cleanup functions
-    if (uploadPlayersDocument.length > 0) {
-      await multipleBlobDestroyer(
-        uploadPlayersDocument
-          .filter(Boolean)
-          .map((item) => item.documentAccessUrl),
+
+      return successRes(
+        res,
+        "Verification code sent successfully to your email.",
       );
     }
+  } catch (error: unknown) {
+    await cleanupBlobs();
 
-    if (uploadProfilePhoto?.documentAccessUrl) {
-      await blobDestroyer(uploadProfilePhoto.documentAccessUrl);
+    // delete the key we know we wrote during 500 err.
+    if (writtenRedisKey) {
+      await redisClient.del(writtenRedisKey);
     }
-    await redisClient.del(`${envConfig.otp_security_key}:${user.id}:${otp}`);
+
     return internalServerError(res, (error as Error).message);
   }
 };

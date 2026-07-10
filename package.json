@@ -32,13 +32,8 @@
     "reset-db": "npx prisma migrate reset",
     "prisma-deploy": "npx prisma migrate deploy",
     "prisma-view": "npx prisma studio",
-    "dockerize": "cross-env RUNTIME_ENVIRONMENT=docker-container docker compose up -d --build",
-    "docker-migrate-db": "cross-env RUNTIME_ENVIRONMENT=docker-container prisma migrate dev --name init && prisma generate",
-    "docker-reset": "docker system prune -af --volumes",
     "test": "cross-env NODE_ENV=test dotenv -e .env.test -- vitest",
-    "test:watch": "vitest --watch",
-    "base64-windows": "[Convert]::ToBase64String([System.IO.File]::ReadAllBytes('.env'))",
-    "base64-mac": "base64 -i .env"
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

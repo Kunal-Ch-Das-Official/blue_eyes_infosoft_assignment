@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { z } from "zod";
 import { v4 as uuid } from "uuid";
 
 import { TypeAthleteForm } from "../../types/TypeAthleteForm";
@@ -17,101 +16,119 @@ import { calculateAge, parseDate } from "../../utils/calculateAge";
 import envConfig from "../../config/envConfig";
 import redisClient from "../../redis/redisClient";
 
-export const athleteSchema = z.object({
-  playerName: z.string().min(1),
-  fathersName: z.string().min(1),
-  mothersName: z.string().min(1),
-  dateOfBirth: z.string(),
-  gender: z.enum(["MALE", "FEMALE", "OTHERS"]),
-  emailAddress: z.string().email(),
-  contactNumber: z
-    .string()
-    .trim()
-    .regex(/^(?:\+91|91)?[6-9]\d{9}$/, {
-      message: "Invalid mobile number",
-    }),
-  alternateMobileNo: z
-    .string()
-    .trim()
-    .regex(/^(?:\+91|91)?[6-9]\d{9}$/, {
-      message: "Invalid mobile number",
-    }),
-  nationality: z.string(),
-  bloodGroup: z.enum([
-    "A_POSITIVE",
-    "A_NEGATIVE",
-    "B_POSITIVE",
-    "B_NEGATIVE",
-    "A_B_POSITIVE",
-    "A_B_NEGATIVE",
-    "O_POSITIVE",
-    "O_NEGATIVE",
-    "NOT_KNOWN",
-  ]),
-  height: z.string().optional(),
-  weight: z.string().optional(),
-  governmentIdProofNo: z.string().optional(),
-  address: z.string(),
-  pinCode: z.string(),
-  stateOrProvince: z.string(),
-  country: z.string(),
-  club: z.string(),
-  sports: z.string(),
-  fileTitles: z.array(z.string()).optional(),
-  competitions: z
-    .array(
-      z.object({
-        competitionName: z.string(),
-        sports: z.string(),
-        category: z.string().optional(),
-        position: z.string().optional(),
-      }),
-    )
-    .optional(),
-});
-
 const submitNewFormCtrl = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   const user = req.currentUser;
 
+  // 2. Check if user is authenticated or not
+  if (!user || !user.id) {
+    return unauthorizedRes(res, "Please sign up or login before submitting.");
+  }
+
+  // 3. Declare dynamic tracking keys
+  const verificationOtp: string = req.body?.verificationOtp || "";
+  const attemptKey = `${envConfig.otp_security_key}:attempts:${user.id}`;
+  const dataAccessKey = `${envConfig.otp_security_key}:${user.id}:${verificationOtp}`;
+  const staticKey = `${envConfig.data_signature}:${user.id}`;
+
+  // 4. Determine if we are utilizing the fallback verified cache signature or active OTP
+  const isEmailAlreadyVerified = verificationOtp.trim() === "";
+
+  let accessData: string | null = null;
+
+  // 5. Declare global variables
   let uploadProfilePhoto: any;
-  let uploadPlayersDocument = [];
+  let uploadPlayersDocument: any[] = [];
   let reqBody: TypeAthleteForm;
 
-  const { verificationOtp }: { verificationOtp?: string } = req.body;
+  // 6. Global blob storage cleanup logic
+  const cleanupBlobs = async () => {
+    try {
+      const docs = (uploadPlayersDocument ?? [])
+        .filter(Boolean)
+        .map((item) => item?.documentAccessUrl)
+        .filter(Boolean);
 
-  if (!user.id)
-    return unauthorizedRes(res, "Please sign up or login before submit.");
+      if (docs.length > 0) {
+        await multipleBlobDestroyer(docs);
+      }
+
+      if (uploadProfilePhoto?.documentAccessUrl) {
+        await blobDestroyer(uploadProfilePhoto.documentAccessUrl);
+      }
+    } catch (cleanupError) {
+      console.log("Blob cleanup failed:", cleanupError);
+    }
+  };
 
   try {
-    const dataAccessKey = verificationOtp
-      ? `${envConfig.otp_security_key}:${user.id}:${verificationOtp}`
-      : `${envConfig.data_signature}:${user.id}`;
+    if (isEmailAlreadyVerified) {
+      // Fetch directly from the verified signature key cache if OTP parameter was bypassed by the client
+      accessData = await redisClient.get(staticKey);
 
-    const accessData = await redisClient.get(dataAccessKey);
-
-    if (!accessData) {
-      return unauthorizedRes(res, "Invalid OTP, Please try again later.");
+      if (!accessData) {
+        await cleanupBlobs();
+        return unauthorizedRes(
+          res,
+          "Verified session expired or invalid. Please refresh and try again.",
+        );
+      }
     } else {
-      const result: {
-        reqBody: TypeAthleteForm;
-        uploadPlayersDocument: any;
-        uploadProfilePhoto: any;
-      } = JSON.parse(accessData);
+      // Standard OTP verification cycle pipeline
+      accessData = await redisClient.get(dataAccessKey);
 
-      reqBody = result.reqBody;
-      uploadPlayersDocument = result.uploadPlayersDocument;
-      uploadProfilePhoto = result.uploadProfilePhoto;
+      if (!accessData) {
+        const attempts = await redisClient.incr(attemptKey);
+        await redisClient.expire(attemptKey, 300);
+
+        if (attempts >= 3) {
+          await redisClient.del(dataAccessKey);
+          await redisClient.del(attemptKey);
+          await cleanupBlobs();
+
+          return unauthorizedRes(
+            res,
+            "Maximum OTP attempts exceeded. Please request a new OTP.",
+          );
+        }
+
+        return unauthorizedRes(
+          res,
+          `Invalid OTP. ${3 - attempts} attempts remaining.`,
+        );
+      }
     }
-    await redisClient.del(dataAccessKey);
+
+    // Parse the payload cached inside Redis
+    const result: {
+      reqBody: TypeAthleteForm;
+      uploadPlayersDocument: any[];
+      uploadProfilePhoto: any;
+    } = JSON.parse(accessData);
+
+    reqBody = result.reqBody;
+    uploadPlayersDocument = result.uploadPlayersDocument ?? [];
+    uploadProfilePhoto = result.uploadProfilePhoto;
+
+    // Flush active verification tokens upon successful validation consumption
+    if (!isEmailAlreadyVerified) {
+      await redisClient.del(dataAccessKey);
+      await redisClient.del(attemptKey);
+    } else {
+      await redisClient.del(staticKey); // Clear the static key signature signature once consumed safely
+    }
+
     const dateOfBirth = parseDate(reqBody.dateOfBirth);
     const currentAge = calculateAge(reqBody.dateOfBirth);
     const playerId = uuid();
 
-    // prisma operations
-    await prisma.$transaction([
+    const photoUrl = uploadProfilePhoto?.documentUrl || "";
+    const photoAccessId = uploadProfilePhoto?.documentAccessUrl || "";
+    const validDocuments = (uploadPlayersDocument ?? []).filter(Boolean);
+
+    const transactionOps: Prisma.PrismaPromise<any>[] = [
       prisma.player_details.create({
         data: {
           id: playerId,
@@ -122,16 +139,11 @@ const submitNewFormCtrl = async (
           dateOfBirth: dateOfBirth,
           currentAge: String(currentAge),
           gender: reqBody.gender,
-          playersPhotoUrl: uploadProfilePhoto.documentUrl || "",
-          playersPhotoPId: uploadProfilePhoto.documentAccessUrl || "",
+          playersPhotoUrl: photoUrl,
+          playersPhotoPId: photoAccessId,
           emailAddress: reqBody.emailAddress,
           contactNumber: reqBody.contactNumber,
           alternateMobileNo: reqBody.alternateMobileNo,
-          nationality: reqBody.nationality,
-          bloodGroup: reqBody.bloodGroup,
-          height: reqBody.height,
-          weight: reqBody.weight,
-          governmentIdProof: reqBody.governmentIdProofNo,
           address: reqBody.address,
           pinCode: reqBody.pinCode,
           stateOrProvince: reqBody.stateOrProvince,
@@ -140,61 +152,54 @@ const submitNewFormCtrl = async (
           sports: reqBody.sports,
         },
       }),
+    ];
 
-      prisma.players_document.createMany({
-        data: uploadPlayersDocument.map((doc) => ({
-          documentName: doc.documentName,
-          documentType: doc.documentType,
-          documentUrl: doc.documentUrl,
-          documentAccessUrl: doc.documentAccessUrl,
-          documentSize: doc.documentSize,
-          playerId: playerId,
-        })),
-      }),
+    if (validDocuments.length > 0) {
+      transactionOps.push(
+        prisma.players_document.createMany({
+          data: validDocuments.map((doc) => ({
+            documentName: doc.documentName,
+            documentType: doc.documentType,
+            documentUrl: doc.documentUrl,
+            documentAccessUrl: doc.documentAccessUrl,
+            documentSize: doc.documentSize,
+            playerId: playerId,
+          })),
+        }),
+      );
+    }
 
-      prisma.competition_played.createMany({
-        data: (reqBody.competitions ?? []).map((comp) => ({
-          competitionName: comp.competitionName,
-          sports: comp.sports,
-          category: comp.category,
-          position: comp.position,
-          playerId: playerId,
-        })),
-      }),
-    ]);
+    if ((reqBody.competitions ?? []).length > 0) {
+      transactionOps.push(
+        prisma.competition_played.createMany({
+          data: (reqBody.competitions ?? []).map((comp) => ({
+            competitionName: comp.competitionName,
+            sports: comp.sports,
+            category: comp.category,
+            position: comp.position,
+            playerId: playerId,
+          })),
+        }),
+      );
+    }
 
+    await prisma.$transaction(transactionOps);
     return createdRes(res, "Details have been successfully submitted.");
   } catch (error: unknown) {
     console.log(error);
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      console.log(error.code);
-      console.log(error.meta);
+    await cleanupBlobs();
 
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
       switch (error.code) {
         case "P2002":
           return unprocessableRes(
             res,
             "Email or mobile number already exists.",
           );
-
         case "P2003":
           return unprocessableRes(res, "Foreign key constraint failed.");
       }
     }
-
-    //! Cleanup functions
-    if (uploadPlayersDocument.length > 0) {
-      await multipleBlobDestroyer(
-        uploadPlayersDocument
-          .filter(Boolean)
-          .map((item) => item.documentAccessUrl),
-      );
-    }
-
-    if (uploadProfilePhoto?.documentAccessUrl) {
-      await blobDestroyer(uploadProfilePhoto.documentAccessUrl);
-    }
-
     return internalServerError(res, "Something went wrong.");
   }
 };

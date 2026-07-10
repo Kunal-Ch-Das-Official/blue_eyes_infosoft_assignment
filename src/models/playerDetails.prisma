@@ -16,13 +16,6 @@ model player_details {
         contactNumber String @unique
         alternateMobileNo String? @unique
 
-        
-        nationality String
-        bloodGroup BloodGroup @default(NOT_KNOWN)
-        height String?
-        weight String?
-        governmentIdProof String?
-
 
        //? Address Details 
         address String
@@ -44,18 +37,6 @@ model player_details {
         competitionPlayed competition_played[] @relation("CompetitionPlayed")
         
 
-}
-
-enum BloodGroup {
-    A_POSITIVE
-    A_NEGATIVE
-    B_POSITIVE
-    B_NEGATIVE
-    A_B_POSITIVE
-    A_B_NEGATIVE
-    O_POSITIVE
-    O_NEGATIVE
-    NOT_KNOWN
 }
 
 enum Gender {
