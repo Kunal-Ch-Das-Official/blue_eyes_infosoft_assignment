@@ -1,11 +1,15 @@
 import { Navigate } from "react-router-dom";
-import { AuthValidator } from "../AuthValidator";
 import PrivateWeb from "./PrivateWeb";
+import { useAuthValidator } from "../hooks/useAuthValidator";
 
 const ProtectedRoute = () => {
-  const isAuthenticated = AuthValidator();
+  const { loading, authenticated } = useAuthValidator();
 
-  return !isAuthenticated ? <Navigate to="/sign-in" /> : <PrivateWeb />;
+  console.log("loading", loading)
+  console.log("authenticated", authenticated)
+  
+  if (loading === true) return null;
+  return authenticated === true ? <PrivateWeb /> : <Navigate to="/sign-in" />;
 };
 
 export default ProtectedRoute;

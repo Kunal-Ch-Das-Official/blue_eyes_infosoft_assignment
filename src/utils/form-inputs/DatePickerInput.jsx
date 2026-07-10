@@ -52,7 +52,7 @@ const DatePickerInput = ({
   const [open, setOpen] = useState(false);
   const [currentMonth, setCurrentMonth] =
     useState < Date > (value ?? new Date());
-  const wrapperRef = useRef < HTMLDivElement > null;
+  const wrapperRef = useRef(null)
 
   useEffect(() => {
     const handler = (e) => {

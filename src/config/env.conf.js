@@ -1,8 +1,12 @@
 const environment = {
-backend_base_uri: import.meta.env.BACKEND_BASE_URL || "",
-USER_REGISTRATION_URL: "",
-USER_LOGIN_URL: "",
-fetch_logged_in_user_url: ""
+BACKEND_BASE_URL: import.meta.env.VITE_BACKEND_BASE_URL || "",
+NEW_USER_REGISTRATION_URL: import.meta.env.VITE_NEW_USER_REGISTRATION_URL || "",
+NEW_USER_EMAIL_VERIFICATION_URL: import.meta.env.VITE_NEW_USER_EMAIL_VERIFICATION_URL || "",
+
+EXISTING_USER_LOGIN_URL: import.meta.env.VITE_EXISTING_USER_LOGIN_URL || "",
+
+FETCH_LOGGED_IN_USER_URL: import.meta.env.VITE_FETCH_LOGGED_IN_USER_URL || "",
+EXISTING_USER_LOGOUT_URL: import.meta.env.VITE_EXISTING_USER_LOGOUT_URL || "",
 }
 
 const envConfig = Object.freeze(environment)

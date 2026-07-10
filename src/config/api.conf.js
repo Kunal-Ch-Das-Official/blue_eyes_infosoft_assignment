@@ -11,7 +11,7 @@ NProgress.configure({
 });
 
 const instance = axios.create({
-  baseURL: envConfig.backend_base_uri,
+  baseURL: envConfig.BACKEND_BASE_URL,
   timeout: 30000,
 });
 

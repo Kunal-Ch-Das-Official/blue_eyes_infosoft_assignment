@@ -23,7 +23,7 @@ const SignIn = () => {
         <div>
           <strong className="text-green-600">Successful!</strong>
           <p className="text-xs text-gray-800">{message}</p>
-        </div>
+        </div>,
       );
 
       // Clear the state so effect won't re-run
@@ -31,15 +31,13 @@ const SignIn = () => {
     }
   }, [message, navigate, location.pathname]);
 
-  const handleManualSignIn = async (
-    event
-  ) => {
+  const handleManualSignIn = async (event) => {
     event.preventDefault();
 
     const errorMessage = {
       hasError: false,
       message: [],
-    }
+    };
     if (!isStrongPassword) {
       errorMessage.hasError = true;
       errorMessage.message = [
@@ -69,24 +67,33 @@ const SignIn = () => {
 
         apiUrl.defaults.withCredentials = true;
 
-        const response = await apiUrl.post(envConfig.USER_LOGIN_URL, reqBody);
+        const response = await apiUrl.post(
+          envConfig.EXISTING_USER_LOGIN_URL,
+          reqBody,
+        );
 
-        if (!response.data) {
+        console.log(response);
+        if (response.data.message === "Successful!") {
+          toast.success(
+            <div>
+              <strong className="text-green-600">Login Successful!</strong>
+              <p className="text-xs text-gray-500">{response.data.details}</p>
+            </div>,
+          );
+          navigate("/home");
+        } else {
           toast.error(
             <div>
               <strong className="text-rose-600">Failed!</strong>
               <p className="text-xs text-gray-500">User is not verified</p>
-            </div>
+            </div>,
           );
-        } else {
-          navigate(`/portal`);
         }
       } catch (error) {
         InternalErrorRes(error);
       }
     }
   };
-
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#d8d8d8]">
@@ -96,7 +103,6 @@ const SignIn = () => {
         setIsStrongPassword={setIsStrongPassword}
         onsubmitHandler={handleManualSignIn}
         isEmailNotValid={isEmailNotValid}
-
       />
     </main>
   );

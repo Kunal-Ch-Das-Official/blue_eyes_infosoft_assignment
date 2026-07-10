@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { IoEyeSharp, IoEyeOffSharp } from "react-icons/io5";
 
 const PasswordInput = ({
@@ -6,55 +6,73 @@ const PasswordInput = ({
   serialId,
   passwordLabel,
   inputValue,
-  validationError,
-  errorMessage,
+  validationError = false,
+  errorMessage = "",
   setIsStrongPassword,
 }) => {
-  const [eyeButton, setEyeButton] = useState (false);
-  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState("");
 
-  const handlePasswordOpenClose = () => {
-    setEyeButton((prev) => !prev);
-  };
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword((prev) => !prev);
+  }, []);
 
   // -----------------------
   // Password Strength Logic
   // -----------------------
-  const getPasswordStrength = (pass) => {
-    let strengthScore = 0;
+  const getPasswordStrength = useCallback((pass) => {
+    let score = 0;
 
-    if (pass.length >= 8) strengthScore++; // length
-    if (/[A-Z]/.test(pass)) strengthScore++; // uppercase
-    if (/[a-z]/.test(pass)) strengthScore++; // lowercase
-    if (/[0-9]/.test(pass)) strengthScore++; // numbers
-    if (/[^A-Za-z0-9]/.test(pass)) strengthScore++; // symbols
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[a-z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
 
-    if (strengthScore <= 2) return "weak";
-    if (strengthScore === 3 || strengthScore === 4) return "medium";
+    if (score <= 2) return "weak";
+    if (score <= 4) return "medium";
     return "strong";
+  }, []);
+
+  const strength = useMemo(
+    () => getPasswordStrength(password),
+    [password, getPasswordStrength],
+  );
+
+  // Notify parent when strength changes
+  useEffect(() => {
+    if (typeof setIsStrongPassword === "function") {
+      setIsStrongPassword(strength === "strong");
+    }
+  }, [strength, setIsStrongPassword]);
+
+  const strengthColor = {
+    weak: "text-rose-500",
+    medium: "text-yellow-600",
+    strong: "text-green-600",
   };
 
-  const strength = useMemo(() => getPasswordStrength(password), [password]);
+  const strengthBarColor = {
+    weak: "bg-rose-500",
+    medium: "bg-yellow-500",
+    strong: "bg-green-500",
+  };
 
-  const strengthColor =
-    strength === "weak"
-      ? "text-rose-500"
-      : strength === "medium"
-        ? "text-yellow-600"
-        : "text-green-600";
+  const strengthBarWidth = {
+    weak: "33%",
+    medium: "66%",
+    strong: "100%",
+  };
 
-  const strengthBarColor =
-    strength === "weak"
-      ? "bg-rose-500"
-      : strength === "medium"
-        ? "bg-yellow-500"
-        : "bg-green-500";
+  const handleChange = (e) => {
+    const value = e.target.value;
 
-  if (strength === "strong") {
-    setIsStrongPassword(true);
-  } else {
-    setIsStrongPassword(false);
-  }
+    setPassword(value);
+
+    if (typeof inputValue === "function") {
+      inputValue(value);
+    }
+  };
 
   return (
     <section className="w-full">
@@ -62,77 +80,64 @@ const PasswordInput = ({
         htmlFor={inputId}
         className="block mb-2 text-sm font-medium text-slate-600"
       >
-        {passwordLabel} <span className="text-rose-500 ml-2">*</span>
+        {passwordLabel}
+        <span className="ml-2 text-rose-500">*</span>
       </label>
 
       <div className="relative flex items-center">
         <input
-          type={eyeButton ? "text" : "password"}
-          name={inputId}
           id={inputId}
+          name={inputId}
+          type={showPassword ? "text" : "password"}
           autoComplete="on"
           placeholder="••••••••••••••"
-          className={`bg-white border border-gray-300 text-gray-900
-           rounded-lg 
-           focus:outline-none focus:shadow-sm focus:shadow-blue-300
-           focus:border-blue-400 
-           block w-full p-2 text-sm
-           ${
-             validationError
-               ? "border-rose-600 focus:border-rose-500 shadow-sm shadow-rose-300"
-               : "border-gray-300"
-           }`}
           required
-          onChange={(e) => {
-            setPassword(e.target.value);
-            inputValue(e.target.value);
-          }}
+          onChange={handleChange}
+          className={`block w-full rounded-lg border p-2 text-sm text-gray-900
+            focus:outline-none focus:border-blue-400 focus:shadow-sm focus:shadow-blue-300
+            ${
+              validationError
+                ? "border-rose-600 shadow-sm shadow-rose-300 focus:border-rose-500"
+                : "border-gray-300"
+            }`}
         />
 
-        {eyeButton ? (
-          <IoEyeOffSharp
-            className="text-xl text-gray-600 absolute right-2 cursor-pointer bg-white w-8 rounded-full h-5"
-            onClick={handlePasswordOpenClose}
-          />
-        ) : (
-          <IoEyeSharp
-            className="text-xl text-gray-600 absolute right-2 cursor-pointer bg-white w-8 rounded-full h-5"
-            onClick={handlePasswordOpenClose}
-          />
-        )}
+        <button
+          type="button"
+          onClick={togglePasswordVisibility}
+          className="absolute right-2 flex items-center justify-center w-8 h-8 text-gray-600 hover:text-black"
+        >
+          {showPassword ? (
+            <IoEyeOffSharp className="text-xl" />
+          ) : (
+            <IoEyeSharp className="text-xl" />
+          )}
+        </button>
       </div>
 
-      {/* Password Strength Indicator */}
-      <div
-        className={`h-8 overflow-hidden ${serialId === "confirm_password" && "hidden"}`}
-      >
-        {password.length > 0 && (
-          <div className="mt-2">
-            <div className="w-full h-0.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${strengthBarColor}`}
-                style={{
-                  width:
-                    strength === "weak"
-                      ? "33%"
-                      : strength === "medium"
-                        ? "66%"
-                        : "100%",
-                }}
-              ></div>
-            </div>
-
-            <p className={`text-[10px] mt-1 font-medium ${strengthColor}`}>
-              Password Strength: {strength[0].toUpperCase() + strength.slice(1)}
-            </p>
+      {/* Password Strength */}
+      {serialId !== "confirm_password" && password.length > 0 && (
+        <div className="mt-2">
+          <div className="w-full h-1 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className={`h-full transition-all duration-300 ${strengthBarColor[strength]}`}
+              style={{
+                width: strengthBarWidth[strength],
+              }}
+            />
           </div>
-        )}
-      </div>
+
+          <p
+            className={`mt-1 text-[10px] font-medium ${strengthColor[strength]}`}
+          >
+            Password Strength:{" "}
+            {strength.charAt(0).toUpperCase() + strength.slice(1)}
+          </p>
+        </div>
+      )}
 
       {validationError && (
-        <p className="ml-1 mt-1 text-rose-500 font-sm text-xs my-0 py-0">
-          {errorMessage}
-        </p>
+        <p className="mt-1 ml-1 text-xs text-rose-500">{errorMessage}</p>
       )}
     </section>
   );

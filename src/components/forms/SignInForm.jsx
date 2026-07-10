@@ -51,8 +51,8 @@ const SignInForm = ({
             <div>
               {/* Forgot password link  */}
               <Link
-                to={"/forget-password"}
-                className="font-medium text-sm hover:underline text-[#0f3670]"
+                to={"/#"}
+                className="font-medium text-sm hover:underline text-[#0f3670] underline"
               >
                 Forgot Password?
               </Link>
