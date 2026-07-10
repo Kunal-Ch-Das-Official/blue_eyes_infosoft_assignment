@@ -1,9 +1,11 @@
-
+import AthleteRegistration from "./AthleteRegistration";
 
 const HomePage = () => {
   return (
-    <div className="text-2xl text-red-800">HomePage</div>
-  )
-}
+    <>
+      <AthleteRegistration />
+    </>
+  );
+};
 
-export default HomePage
+export default HomePage;

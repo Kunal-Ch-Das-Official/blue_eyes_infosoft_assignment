@@ -1,14 +1,5 @@
 import { useRef, useState, useEffect } from "react";
 
-// type DatePickerProps = {
-//   inputLabel: string;
-//   fieldId: string;
-//   isRequired?: boolean;
-//   placeholder?: string;
-//   value?: Date | null;
-//   onChange: (date: Date | null) => void;
-// };
-
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
   "January",
@@ -24,22 +15,19 @@ const MONTHS = [
   "November",
   "December",
 ];
+
+// Dynamically scale from a historical point (e.g., 1920) up to a decade into the future
+const START_YEAR = 1920;
+const END_YEAR = new Date().getFullYear() + 20;
 const YEARS = Array.from(
-  { length: 40 },
-  (_, i) => new Date().getFullYear() - 20 + i,
+  { length: END_YEAR - START_YEAR + 1 },
+  (_, i) => START_YEAR + i,
 );
 
 const formatDate = (date) =>
   `${String(date.getDate()).padStart(2, "0")}-${String(
     date.getMonth() + 1,
   ).padStart(2, "0")}-${date.getFullYear()}`;
-
-// const parseDate = (val: string): Date | null => {
-//   const [dd, mm, yyyy] = val.split("-").map(Number);
-//   if (!dd || !mm || !yyyy) return null;
-//   const parsed = new Date(yyyy, mm - 1, dd);
-//   return isNaN(parsed.getTime()) ? null : parsed;
-// };
 
 const DatePickerInput = ({
   inputLabel,
@@ -50,9 +38,8 @@ const DatePickerInput = ({
   onChange,
 }) => {
   const [open, setOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] =
-    useState < Date > (value ?? new Date());
-  const wrapperRef = useRef(null)
+  const [currentMonth, setCurrentMonth] = useState(value ?? new Date());
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
     const handler = (e) => {
@@ -63,6 +50,16 @@ const DatePickerInput = ({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    if (!value) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setCurrentMonth(value);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [value]);
 
   const inputValue = value ? formatDate(value) : "";
   const startOfMonth = new Date(
@@ -91,7 +88,7 @@ const DatePickerInput = ({
   };
 
   return (
-    <div className="w-full font-sans" ref={wrapperRef}>
+    <div className="w-full font-sans relative" ref={wrapperRef}>
       <label
         htmlFor={fieldId}
         className="block mb-1.5 text-sm font-semibold text-gray-700 ml-1"
@@ -132,10 +129,11 @@ const DatePickerInput = ({
         </div>
 
         {open && (
-          <div className="absolute z-50 mt-3 w-full cursor-pointer bg-white border border-gray-100 rounded-2xl shadow-2xl p-4 animate-in fade-in zoom-in duration-200">
+          <div className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 w-[92vw] sm:w-[320px] cursor-pointer bg-white border border-gray-200 rounded-2xl shadow-2xl p-4 origin-top transition-all">
             {/* Header Controls */}
             <div className="flex items-center justify-between mb-4">
               <button
+                type="button"
                 onClick={() => changeMonth(-1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 cursor-pointer"
               >
@@ -154,7 +152,7 @@ const DatePickerInput = ({
                 </svg>
               </button>
 
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <select
                   value={currentMonth.getMonth()}
                   onChange={(e) =>
@@ -166,7 +164,7 @@ const DatePickerInput = ({
                       ),
                     )
                   }
-                  className="bg-transparent font-bold text-gray-700 text-sm hover:text-blue-600 cursor-pointer outline-none appearance-none px-1"
+                  className="bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 font-semibold text-gray-700 text-xs hover:text-blue-600 cursor-pointer outline-none max-h-[200px]"
                 >
                   {MONTHS.map((m, i) => (
                     <option key={m} value={i}>
@@ -174,6 +172,7 @@ const DatePickerInput = ({
                     </option>
                   ))}
                 </select>
+
                 <select
                   value={currentMonth.getFullYear()}
                   onChange={(e) =>
@@ -185,7 +184,7 @@ const DatePickerInput = ({
                       ),
                     )
                   }
-                  className="bg-transparent font-bold text-gray-700 text-sm hover:text-blue-600 cursor-pointer outline-none appearance-none px-1"
+                  className="bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 font-semibold text-gray-700 text-xs hover:text-blue-600 cursor-pointer outline-none"
                 >
                   {YEARS.map((y) => (
                     <option key={y} value={y}>
@@ -196,6 +195,7 @@ const DatePickerInput = ({
               </div>
 
               <button
+                type="button"
                 onClick={() => changeMonth(1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 cursor-pointer"
               >
@@ -228,9 +228,9 @@ const DatePickerInput = ({
             </div>
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1 justify-items-center">
               {Array.from({ length: startDay }).map((_, i) => (
-                <div key={`empty-${i}`} />
+                <div key={`empty-${i}`} className="h-8 w-8" />
               ))}
 
               {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -244,21 +244,22 @@ const DatePickerInput = ({
 
                 return (
                   <button
+                    type="button"
                     key={i}
                     onClick={() => {
                       onChange(day);
                       setOpen(false);
                     }}
                     className={`
-                      h-9 w-9 text-sm rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer
+                      h-8 w-8 text-xs rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer
                       ${
                         selected
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-200 scale-105 font-semibold"
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-200 font-semibold"
                           : "hover:bg-blue-50 hover:text-blue-600 text-gray-600"
                       }
                       ${
                         today && !selected
-                          ? "border border-blue-200 text-blue-600 font-bold"
+                          ? "border border-blue-400 text-blue-600 font-bold"
                           : ""
                       }
                     `}
@@ -270,10 +271,13 @@ const DatePickerInput = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="mt-4 pt-3 border-t border-gray-50 flex justify-between">
+            <div className="mt-3 pt-2.5 border-t border-gray-100 flex justify-between">
               <button
+                type="button"
                 onClick={() => {
-                  onChange(new Date());
+                  const today = new Date();
+                  onChange(today);
+                  setCurrentMonth(today);
                   setOpen(false);
                 }}
                 className="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-700 px-2 py-1"
@@ -281,6 +285,7 @@ const DatePickerInput = ({
                 Today
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onChange(null);
                   setOpen(false);
