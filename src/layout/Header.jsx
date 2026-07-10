@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import apiUrl from "../config/api.conf";
 import envConfig from "../config/env.conf";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import InternalErrorRes from "../utils/toast/InternalErrorRes";
 import Confirmation from "../utils/modals/Confirmation";
 
@@ -82,12 +82,12 @@ const Header = () => {
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex space-x-8 font-medium">
-              <a
-                href="#home"
+              <Link
+                to="/home"
                 className="hover:text-indigo-400 transition duration-200"
               >
                 Home
-              </a>
+              </Link>
               <a
                 href="#about"
                 className="hover:text-indigo-400 transition duration-200"
@@ -127,21 +127,14 @@ const Header = () => {
                 {/* Dropdown Menu */}
                 {isProfileOpen && (
                   <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none transition-all ease-out duration-100">
-                    <a
-                      href="#profile"
+                    <Link
+                      to={`/my-document`}
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2 text-sm text-gray-200 hover:bg-indigo-600 hover:text-white transition duration-150"
                     >
-                      Profile
-                    </a>
-                    <a
-                      href="#my-data"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-200 hover:bg-indigo-600 hover:text-white transition duration-150"
-                    >
-                      My Data
-                    </a>
-                    <hr className="border-slate-700 my-1" />
+                      My Documents
+                    </Link>
+                    <hr className="border-slate-700 my-1" />ˀ
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);

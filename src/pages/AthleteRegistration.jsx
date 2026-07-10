@@ -10,6 +10,7 @@ import Step5Documents from "../components/registration-form/Step5Documents";
 import Step6Review from "../components/registration-form/Step6Review";
 import NavigationButtons from "../components/registration-form/NavigationButtons";
 import Step7EmailVerify from "../components/registration-form/Step7EmailVerify";
+import ThemeLink from "../utils/buttons/ThemeLink";
 
 const AthleteRegistration = () => {
   const currentStep = useAthleteRegistrationStore((state) => state.currentStep);
@@ -39,6 +40,8 @@ const AthleteRegistration = () => {
             <p className="text-slate-600">
               Your application has been submitted successfully.
             </p>
+
+            <ThemeLink to="/my-document" btnText="See your documents" />
           </div>
         );
       default:

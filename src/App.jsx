@@ -4,6 +4,7 @@ import SignUp from "./pages/SignUp";
 import ProtectedRoute from "./private/ProtectedRouter";
 import HomePage from "./pages/HomePage";
 import NewUsersEmailVerification from "./pages/NewUsersEmailVerification";
+import MyDocuments from "./pages/MyDocuments";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route index element={<HomePage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/my-document" element={<MyDocuments />} />
       </Route>
     </Routes>
   );
