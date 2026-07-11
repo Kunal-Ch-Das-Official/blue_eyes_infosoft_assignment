@@ -3,7 +3,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import NProgress from "nprogress";
 
 import Header from "../layout/Header";
-import Footer from "../layout/Footer";
 
 const PrivateWeb = () => {
   const location = useLocation();
@@ -22,11 +21,9 @@ const PrivateWeb = () => {
     <div className="min-h-screen xl:flex">
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1 min-h-screen">
         <Outlet />
       </main>
-
-      <Footer />
     </div>
   );
 };

@@ -41,7 +41,10 @@ const AthleteRegistration = () => {
               Your application has been submitted successfully.
             </p>
 
-            <ThemeLink to="/my-document" btnText="See your documents" />
+            <div className="mt-6 max-w-50 w-full mx-auto">
+
+              <ThemeLink to="/my-document" btnText="See your documents" />
+            </div>
           </div>
         );
       default:

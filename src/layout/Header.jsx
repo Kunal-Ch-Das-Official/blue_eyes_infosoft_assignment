@@ -72,12 +72,12 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="shrink-0">
-              <a
-                href="#"
+              <Link
+                to="/home"
                 className="text-xl font-bold tracking-wider text-indigo-400 hover:text-indigo-300 transition duration-200"
               >
                 Sports Club
-              </a>
+              </Link>
             </div>
 
             {/* Desktop Navigation Links */}
@@ -134,7 +134,7 @@ const Header = () => {
                     >
                       My Documents
                     </Link>
-                    <hr className="border-slate-700 my-1" />ˀ
+                    <hr className="border-slate-700 my-1" />
                     <button
                       onClick={() => {
                         setIsProfileOpen(false);

@@ -50,7 +50,7 @@ const MyDocumentsComp = ({ playerData }) => {
 
           {/* Avatar Container */}
           <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl blur opacity-15 group-hover:opacity-25 transition duration-350" />
+            <div className="absolute -inset-0.5 bg-linear-to-r from-emerald-500 to-teal-500 rounded-xl blur opacity-15 group-hover:opacity-25 transition duration-350" />
             <div className="relative w-32 h-32 md:w-36 md:h-36 rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200">
               <img
                 src={playerData.playersPhotoUrl || ""}
