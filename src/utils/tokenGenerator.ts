@@ -33,18 +33,18 @@ const tokenGenerator = async (
 
   if (token) {
     res.cookie(cookieName, token, cookieOption); // Set the JWT token in cookies
-    const { fullName, emailId } = user; // Extract username and email from user object
+    const { fullName, emailId, role } = user; // Extract username and email from user object
 
     // Send an email alert notifying the user of successful login
     //   Send Welcome message to user
     await successEmail({
       to: emailId,
-      subject: "You've Successfully Logged In to Sports Club.",
+      subject: `${role === "ADMIN" ? "You've Successfully Logged In to Sports Club Admin" : "You've Successfully Logged In to Sports Club."}`,
       html:
-        `<p>Dear ${fullName},</p><p>Welcome to Sports Club! We're glad to have you on board.</p>` +
+        `<p>Dear ${fullName},</p><p>${role === "ADMIN" ? "Welcome to Sports Club Admin Dashboard!" : "Welcome to Sports Club! We're glad to have you on board."}</p>` +
         `<p>This is a confirmation that you have successfully logged into your account associated with this email address.</p>` +
         `<p>If you did not initiate this login, please reset your password immediately or contact our support team.</p>` +
-        `<p>Best regards,<br/>Sports Club</p>`,
+        `<p>Best regards,<br/>${role === "ADMIN" ? "Electronics Mail System" : "Sports Club Team."}</p>`,
     }).catch((err) => {
       console.error("Failed to send login alert:", err.message); // Log error if email sending fails
     });

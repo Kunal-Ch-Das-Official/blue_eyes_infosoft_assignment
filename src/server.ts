@@ -7,6 +7,7 @@ import cors from "cors";
 import healthCheck from "./routes/healthCheck";
 import authenticationRouter from "./routes/authenticationRouter";
 import athleteRegistrationRouter from "./routes/athleteRegistrationRouter";
+// import helmet from "helmet";
 
 const app: express.Application = express();
 const httpServer = createServer(app);
@@ -14,9 +15,15 @@ const httpServer = createServer(app);
 // ---------------- MIDDLEWARE ----------------
 app.use(
   cors({
-    origin: ["http://localhost:4173", "http://localhost:5173"],
+    origin: [
+      "http://localhost:4173",
+      "http://localhost:4174",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000",
+    ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Added OPTIONS
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -26,6 +33,48 @@ app.use(
     ],
   }),
 );
+
+
+// Helmet middleware for production grade security (No need in development environment)
+// app.use(
+//   helmet({
+//     contentSecurityPolicy: {
+//       directives: {
+//         defaultSrc: ["'self'"],
+//         scriptSrc: ["'self'", "'strict-dynamic'", "https://trusted-cdn.com"],
+//         styleSrc: ["'self'", "https://fonts.googleapis.com"],
+//         imgSrc: ["'self'", "data:", "https://*"],
+//         connectSrc: [
+//           "'self'",
+//               "http://localhost:4173",
+//       "http://localhost:4174",
+//       "http://localhost:5173",
+//       "http://localhost:5174",
+//       "http://localhost:3000",
+//         ],
+//         fontSrc: ["'self'", "https://fonts.gstatic.com"],
+//         objectSrc: ["'none'"],
+//         frameSrc: ["'self'"],
+//         upgradeInsecureRequests: [],
+//       },
+//     },
+//     frameguard: { action: "sameorigin" },
+//     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+//     hsts: {
+//       maxAge: 31536000,
+//       includeSubDomains: true,
+//       preload: true,
+//     },
+//     dnsPrefetchControl: { allow: false },
+//     hidePoweredBy: true,
+//     xssFilter: true,
+//     noSniff: true,
+//     ieNoOpen: true,
+//     crossOriginEmbedderPolicy: true,
+//     crossOriginOpenerPolicy: { policy: "same-origin" },
+//     crossOriginResourcePolicy: { policy: "cross-origin" },
+//   }),
+// );
 
 app.use(cookieParser());
 app.set("trust proxy", 1);
@@ -38,20 +87,10 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).json("Welcome to sports club management system");
 });
 
-
-
-
 // --------------- Router Registration -------------------
 
-app.use("/api/v1/sports-club-crm/auth", authenticationRouter)
-app.use("/api/v1/sports-club-crm/athlete-ops", athleteRegistrationRouter)
-
-
-
-
-
-
-
+app.use("/api/v1/sports-club-crm/auth", authenticationRouter);
+app.use("/api/v1/sports-club-crm/athlete-ops", athleteRegistrationRouter);
 
 // ---------------- ERROR HANDLER ----------------
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

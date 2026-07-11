@@ -32,11 +32,18 @@ model player_details {
         userId String
         userReference     user_auth @relation("SubmittedDataByUser", fields: [userId], references: [id], onDelete: Cascade)
 
+        formStatus FormStatus @default(APPLIED)
         
         playerDocuments   players_document[] @relation("PlayersDocument")
         competitionPlayed competition_played[] @relation("CompetitionPlayed")
         
 
+}
+
+enum FormStatus {
+    APPLIED
+    APPROVED
+    REJECTED
 }
 
 enum Gender {

@@ -6,6 +6,7 @@ import fetchAthleteDetailsCtrl from "../controllers/athlete-registration/fetchAt
 import fetchDetailsByAuthUsersCtrl from "../controllers/athlete-registration/fetchDetailsByAuthUsersCtrl";
 import deleteAthleteDetailsCtrl from "../controllers/athlete-registration/deleteAthleteDetailsCtrl";
 import verifyAthleteEmailIdCtrl from "../controllers/athlete-registration/verifyAthleteEmailIdCtrl";
+import updateFormStatusCtrl from "../controllers/athlete-registration/updateFormStatusCtrl";
 
 const athleteRegistrationRouter = Router();
 
@@ -23,12 +24,14 @@ athleteRegistrationRouter.post(
       maxCount: 25,
     },
   ]),
-  verifyAthleteEmailIdCtrl
+  verifyAthleteEmailIdCtrl,
 );
 
-
-athleteRegistrationRouter.post("/submit",  authorization("USER"),  submitNewFormCtrl)
-
+athleteRegistrationRouter.post(
+  "/submit",
+  authorization("USER"),
+  submitNewFormCtrl,
+);
 
 // 2. Fetch All player's details
 athleteRegistrationRouter.get(
@@ -44,17 +47,25 @@ athleteRegistrationRouter.get(
   fetchAthleteDetailsCtrl,
 );
 
-// 4.
+// 4. Fetch own submitted data
 athleteRegistrationRouter.get(
   "/own-data",
   authorization("USER"),
   fetchDetailsByAuthUsersCtrl,
 );
 
+//5. Remove specific data by admin
 athleteRegistrationRouter.delete(
   "/remove/:id",
   authorization("ADMIN"),
   deleteAthleteDetailsCtrl,
+);
+
+// 6. Update Form status
+athleteRegistrationRouter.post(
+  "/update-status",
+  authorization("ADMIN"),
+  updateFormStatusCtrl,
 );
 
 export default athleteRegistrationRouter;

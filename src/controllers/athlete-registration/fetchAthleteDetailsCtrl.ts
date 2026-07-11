@@ -35,9 +35,14 @@ const fetchAthleteDetailsCtrl = async (
       }
     } else {
       const fetchAllDetails = await prisma.player_details.findMany({
-        include: {
-          playerDocuments: true,
+        select: {
+          id: true,
+          playerName: true,
+          contactNumber: true,
+          currentAge: true,
+          formStatus: true,
           competitionPlayed: true,
+          createdAt: true,
         },
       });
 
