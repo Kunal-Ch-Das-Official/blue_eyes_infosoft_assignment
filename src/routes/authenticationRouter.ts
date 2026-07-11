@@ -24,9 +24,16 @@ authenticationRouter.post("/admin-login", adminLoginCtrl);
 // 5. Get logged in user
 authenticationRouter.get(
   "/user/logged-in",
-  authorization("ADMIN", "USER"),
+  authorization( "USER"),
   getLoggedInUserCtrl,
 );
+
+authenticationRouter.get(
+  "/admin/logged-in",
+  authorization("ADMIN"),
+  getLoggedInUserCtrl,
+);
+
 
 
 // 6. Logout Controller 

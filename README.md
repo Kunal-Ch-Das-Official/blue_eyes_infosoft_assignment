@@ -1,116 +1,108 @@
 # Sports Club Management API
 
-A TypeScript-based backend service for managing sports club athlete registrations, authentication, and admin operations. The API supports user and admin sign-in, OTP-based registration, athlete form submission with file uploads, and secure retrieval or deletion of submitted data.
+A Node.js + Express + TypeScript backend for managing athlete registrations, authentication, file uploads, email verification, and admin workflows for a sports club management system.
 
-## Features
+## 1. Overview
 
-- User and admin authentication with JWT cookies
-- OTP-based registration and email verification
-- Athlete registration workflow with profile photos and supporting documents
-- Cloudinary-backed file uploads
-- PostgreSQL persistence through Prisma
-- Redis-backed OTP and temporary submission storage
-- Health check endpoint for service readiness
+This project provides a REST API for:
 
-## Tech Stack
+- User and admin authentication
+- Registration and OTP-based email verification
+- Athlete form submission with profile photo and document uploads
+- Admin review and status updates for athlete applications
+- Exporting athlete records to Excel
+- Health checks for app and database availability
 
-- Node.js + Express
-- TypeScript
+## 2. Tech Stack
+
+- Node.js + TypeScript
+- Express.js
 - Prisma ORM
 - PostgreSQL
 - Redis
-- Cloudinary
-- Nodemailer
-- Zod
+- JWT (cookie-based auth)
+- Multer (multipart file upload)
+- Nodemailer (email sending)
+- Vitest + Supertest (testing)
 
-## Architecture Overview
+## 3. Project Structure
 
-```mermaid
-flowchart TD
-    A[Client] --> B[Express API]
-    B --> C[Authentication Routes]
-    B --> D[Athlete Registration Routes]
-    C --> E[JWT Auth Middleware]
-    C --> F[PostgreSQL via Prisma]
-    C --> G[Redis for OTP]
-    D --> H[Cloudinary Uploads]
-    D --> F
-    D --> G
-    F --> I[Player Details / Documents / Competitions]
-```
+- src/controllers: request handlers for authentication and athlete operations
+- src/routes: route definitions grouped by feature
+- src/middleware: auth and file upload middleware
+- src/services: blob upload, email, Excel generation, and cookie helpers
+- src/utils: validation, hashing, JWT helpers, and response utilities
+- prisma/: Prisma schema and migrations
+- tests/: Vitest test suites for utilities, controllers, middleware, and routes
 
-## Project Structure
-
-- src/server.ts — Express application bootstrap
-- src/routes — API route definitions
-- src/controllers — Request handlers for auth and athlete flows
-- src/middleware — Authorization and file upload middleware
-- prisma/schema.prisma — Database schema definition
-- src/services — Email, blob storage, and cookie helpers
-- src/config — Environment and Cloudinary configuration
-
-## Prerequisites
+## 4. Prerequisites
 
 Before running the project, make sure you have:
 
-- Node.js 18 or newer
-- npm
-- PostgreSQL running locally or remotely
-- Redis running locally or remotely
-- A Cloudinary account
-- SMTP credentials for sending verification emails
+- Node.js 18+ installed
+- npm or yarn installed
+- PostgreSQL running
+- Redis running
+- An SMTP service configured for OTP/email notifications
 
-## Environment Configuration
+## 5. Environment Variables
 
-Create a .env file in the project root using the values from .env.sample.
-
-Required variables:
+Create a `.env` file in the project root with the following values:
 
 ```env
-PORT=3000
+PORT=5000
 NODE_ENVIRONMENT=development
 
-# Prisma / PostgreSQL
-DIRECT_URL=postgresql://username:password@localhost:5432/sports_club
+# Database
+DIRECT_URL=postgresql://<user>:<password>@<host>:<port>/<database>
+DATABASE_URL=postgresql://<user>:<password>@<host>:<port>/<database>
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
-# Security
-OTP_SECURITY_KEY=change-this-secret
-JWT_SECRET=change-this-jwt-secret
-DATA_SIGNATURE=change-this-data-signature
+# JWT
+JWT_SECRET=your_super_secret_key
+DATA_SIGNATURE=your_data_signature
+OTP_SECURITY_KEY=your_otp_security_key
 
-# Cloudinary
-CLOUDINARY_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+# Cloudinary (for file uploads)
+CLOUDINARY_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-# SMTP / Email
-SMTP_PROTOCOL=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SENDER=your-email@example.com
-SMTP_PASS=your-app-password
+# SMTP
+SMTP_PROTOCOL=smtp
+SMTP_PORT=587
+SMTP_SENDER=your_email@example.com
+SMTP_PASS=your_email_password
 ```
 
-> The application reads the PostgreSQL connection string from DIRECT_URL.
+> The application reads these values from the environment configuration in src/config/envConfig.ts.
 
-## Installation
+## 6. Installation
+
+Clone the repository and install dependencies:
 
 ```bash
 npm install
 ```
 
-## Database Setup
+## 7. Database Setup
 
-Generate Prisma client and run migrations:
+Generate Prisma client and apply migrations:
 
 ```bash
 npx prisma generate
 npx prisma migrate dev --name init
 ```
 
-## Run the Server
+If you want to open Prisma Studio:
+
+```bash
+npm run studio
+```
+
+## 8. Running the Project
 
 ### Development mode
 
@@ -118,7 +110,7 @@ npx prisma migrate dev --name init
 npm run dev
 ```
 
-The server will start on http://localhost:3000 by default.
+The server starts on the port configured in `PORT` (default: `5000`).
 
 ### Production build
 
@@ -127,52 +119,378 @@ npm run build
 npm start
 ```
 
-## API Endpoints
+## 9. Running Tests
 
-All protected routes require a valid authorization_token cookie returned after login.
+Run the test suite:
 
-### Authentication
+```bash
+npm test
+```
 
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| POST | /api/v1/sports-club-crm/auth/registration-init | Public | Starts registration and sends an OTP to the provided email |
-| POST | /api/v1/sports-club-crm/auth/verify-otp | Public | Verifies the OTP and creates the user account |
-| POST | /api/v1/sports-club-crm/auth/login-user | Public | Logs in a regular user |
-| POST | /api/v1/sports-club-crm/auth/admin-login | Public | Logs in an admin user |
-| GET | /api/v1/sports-club-crm/auth/user/logged-in | USER, ADMIN | Returns the current logged-in user |
-| POST | /api/v1/sports-club-crm/auth/user-logout | USER, ADMIN | Clears the auth cookie and logs the user out |
+Watch mode:
 
-### Athlete Operations
+```bash
+npm run test:watch
+```
 
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| POST | /api/v1/sports-club-crm/athlete-ops/form-verification | USER | Uploads profile photo and documents, validates the athlete data, and sends an email verification OTP when needed |
-| POST | /api/v1/sports-club-crm/athlete-ops/submit | USER | Finalizes the athlete registration after verification |
-| GET | /api/v1/sports-club-crm/athlete-ops/player-details | ADMIN | Fetches all athlete submissions |
-| GET | /api/v1/sports-club-crm/athlete-ops/player-details/:id | ADMIN | Fetches a single athlete submission by ID |
-| GET | /api/v1/sports-club-crm/athlete-ops/own-data | USER | Fetches submissions created by the logged-in user |
-| DELETE | /api/v1/sports-club-crm/athlete-ops/remove/:id | ADMIN | Deletes an athlete submission |
+## 10. API Base URL
 
-### Health Check
+All routes are mounted under:
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | /health | Verifies that the API and database are reachable |
+```text
+/api/v1/sports-club-crm
+```
 
-## Typical Registration Flow
+### Authentication routes
 
-1. Send a POST request to /api/v1/sports-club-crm/auth/registration-init with fullName, emailId, password, and confirmPassword.
-2. Receive the OTP in the email inbox.
-3. Confirm the account with POST /api/v1/sports-club-crm/auth/verify-otp.
-4. Log in with POST /api/v1/sports-club-crm/auth/login-user.
-5. Submit athlete details using POST /api/v1/sports-club-crm/athlete-ops/form-verification and then POST /api/v1/sports-club-crm/athlete-ops/submit.
+Base path:
 
-## Notes
+```text
+/api/v1/sports-club-crm/auth
+```
 
-- Uploaded files are validated and stored through Cloudinary.
-- Temporary verification payloads are stored in Redis and expire automatically.
-- The application uses cookies for session management, so browser-based clients should allow credentials.
+### Athlete routes
 
-## License
+Base path:
 
-This project is licensed under the CUSTOM MIT License.
+```text
+/api/v1/sports-club-crm/athlete-ops
+```
+
+## 11. API Documentation
+
+### 11.1 Health Check
+
+Check whether the API and database are healthy.
+
+- Method: GET
+- Path: `/health`
+
+Example:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "services": {
+    "database": "up"
+  }
+}
+```
+
+---
+
+### 11.2 User Registration Initialization
+
+Start registration and send a verification OTP to the provided email.
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/auth/registration-init`
+
+Request body:
+
+```json
+{
+  "fullName": "John Doe",
+  "emailId": "john@example.com",
+  "password": "StrongPassword123",
+  "confirmPassword": "StrongPassword123"
+}
+```
+
+Optional query parameter:
+
+```text
+role=USER
+```
+
+Responses:
+- `200` success: OTP sent successfully
+- `400` invalid request
+- `409` user already exists
+
+---
+
+### 11.3 Verify Registration OTP
+
+Complete registration with the OTP sent by email.
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/auth/verify-otp`
+
+Request body:
+
+```json
+{
+  "oneTimePassword": "123456"
+}
+```
+
+Responses:
+- `200` user successfully registered
+- `401` invalid OTP
+- `400` missing OTP
+
+---
+
+### 11.4 User Login
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/auth/login-user`
+
+Request body:
+
+```json
+{
+  "emailId": "john@example.com",
+  "password": "StrongPassword123"
+}
+```
+
+On success, the server sets an auth cookie and returns a success response.
+
+---
+
+### 11.5 Admin Login
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/auth/admin-login`
+
+Request body:
+
+```json
+{
+  "emailId": "admin@example.com",
+  "password": "AdminPassword123"
+}
+```
+
+---
+
+### 11.6 Get Logged-in User
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/auth/user/logged-in`
+- Required role: USER
+
+The request must include the `user_authorization_token` cookie.
+
+---
+
+### 11.7 Admin Get Logged-in User
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/auth/admin/logged-in`
+- Required role: ADMIN
+
+The request must include the `admin_authorization_token` cookie.
+
+---
+
+### 11.8 Logout
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/auth/user-logout`
+- Required role: USER or ADMIN
+
+The endpoint clears the current auth cookie and logs the user out.
+
+---
+
+### 11.9 Submit Athlete Form
+
+Submit an athlete registration form with profile photo and supporting documents.
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/athlete-ops/submit`
+- Required role: USER
+
+This endpoint expects a multipart/form-data request.
+
+Required form fields:
+- `profile_photo`: image file
+- `players_document`: one or more document files
+- `playerName`
+- `fathersName`
+- `mothersName`
+- `dateOfBirth`
+- `gender`
+- `emailAddress`
+- `contactNumber`
+- `alternateMobileNo`
+- `address`
+- `pinCode`
+- `stateOrProvince`
+- `country`
+- `club`
+- `sports`
+- `fileTitles` (optional JSON array)
+- `competitions` (optional JSON array)
+
+Example using curl:
+
+```bash
+curl -X POST http://localhost:5000/api/v1/sports-club-crm/athlete-ops/submit \
+  -H "Cookie: user_authorization_token=YOUR_TOKEN" \
+  -F "profile_photo=@/path/to/photo.jpg" \
+  -F "players_document=@/path/to/doc.pdf" \
+  -F "playerName=Asha" \
+  -F "fathersName=John" \
+  -F "mothersName=Maria" \
+  -F "dateOfBirth=11/07/1995" \
+  -F "gender=FEMALE" \
+  -F "emailAddress=asha@example.com" \
+  -F "contactNumber=9876543210" \
+  -F "alternateMobileNo=9876543210" \
+  -F "address=Some Street" \
+  -F "pinCode=123456" \
+  -F "stateOrProvince=Delhi" \
+  -F "country=India" \
+  -F "club=Sports Club" \
+  -F "sports=Cricket" \
+  -F "fileTitles=[\"ID Proof\"]" \
+  -F "competitions=[]"
+```
+
+---
+
+### 11.10 Verify Athlete Email and Upload Files
+
+Validate the athlete email and prepare the submission with uploaded files.
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/athlete-ops/form-verification`
+- Required role: USER
+
+This endpoint uploads profile photo and athlete documents, validates the payload, and stores pending verification data.
+
+---
+
+### 11.11 Fetch All Athlete Details (Admin)
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/athlete-ops/player-details`
+- Required role: ADMIN
+
+Returns a list of athlete registration summaries.
+
+---
+
+### 11.12 Fetch One Athlete Details (Admin)
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/athlete-ops/player-details/:id`
+- Required role: ADMIN
+
+Returns one athlete record with related documents and competitions.
+
+---
+
+### 11.13 Fetch Own Submitted Data (User)
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/athlete-ops/own-data`
+- Required role: USER
+
+Returns records submitted by the currently authenticated user.
+
+---
+
+### 11.14 Delete Athlete Record (Admin)
+
+- Method: DELETE
+- Path: `/api/v1/sports-club-crm/athlete-ops/remove/:id`
+- Required role: ADMIN
+
+Deletes an athlete record by ID.
+
+---
+
+### 11.15 Update Form Status (Admin)
+
+- Method: POST
+- Path: `/api/v1/sports-club-crm/athlete-ops/update-status`
+- Required role: ADMIN
+
+Query parameters:
+- `formDataId`: athlete record ID
+- `status`: `APPROVED` or `REJECTED`
+
+Example:
+
+```bash
+curl "http://localhost:5000/api/v1/sports-club-crm/athlete-ops/update-status?formDataId=123&status=APPROVED"
+```
+
+---
+
+### 11.16 Export Athletes to Excel
+
+- Method: GET
+- Path: `/api/v1/sports-club-crm/athlete-ops/export-data`
+- Required role: ADMIN
+
+Downloads an Excel workbook containing athlete data.
+
+## 12. Authentication Notes
+
+The API uses cookie-based JWT authentication.
+
+Cookies used by the server:
+- `user_authorization_token`
+- `admin_authorization_token`
+
+Make sure your client sends cookies with cross-site requests when required.
+
+## 13. Response Format
+
+Most endpoints return a JSON object with a standard structure similar to:
+
+```json
+{
+  "message": "Successful!",
+  "statusCode": 200,
+  "details": "Operation completed successfully"
+}
+```
+
+Error responses also follow a consistent pattern:
+
+```json
+{
+  "message": "Bad Request!",
+  "statusCode": 400,
+  "details": "Validation failed"
+}
+```
+
+## 14. Testing Notes
+
+The project includes tests for:
+
+- Utility functions
+- Middleware
+- Controllers
+- Routes
+
+To run them:
+
+```bash
+npm test
+```
+
+## 15. Troubleshooting
+
+- If Prisma throws a database connection error, verify PostgreSQL is running and `DIRECT_URL` is correct.
+- If Redis-related features fail, verify Redis is running and `REDIS_URL` is correct.
+- If mail verification does not send, verify SMTP credentials and the `SMTP_*` variables.
+- If uploads fail, verify your Cloudinary credentials and the upload service configuration.
+
+## 16. License
+
+This project is licensed under MIT.

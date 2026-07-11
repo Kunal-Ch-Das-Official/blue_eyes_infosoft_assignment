@@ -51,7 +51,7 @@ const adminLoginCtrl = async (req: Request, res: Response): Promise<void> => {
         };
 
         // Call Token Generator function to handle the next 
-        await tokenGenerator(`authorization_token`, tokenPayload, res);
+        await tokenGenerator(`admin_authorization_token`, tokenPayload, res);
       }
     }
   } catch (error: unknown) {

@@ -12,7 +12,8 @@ const logoutUserCtrl = async (req: Request, res: Response): Promise<void> => {
     );
   }
 
-  res.clearCookie("authorization_token", cookieOption);
+  isUser.role === "ADMIN" ?    res.clearCookie("admin_authorization_token", cookieOption) :
+  res.clearCookie("user_authorization_token", cookieOption);
 
   return successRes(res, "Requested user has been logged out successfully.");
 };

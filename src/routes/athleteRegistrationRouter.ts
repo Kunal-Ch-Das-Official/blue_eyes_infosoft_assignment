@@ -7,6 +7,7 @@ import fetchDetailsByAuthUsersCtrl from "../controllers/athlete-registration/fet
 import deleteAthleteDetailsCtrl from "../controllers/athlete-registration/deleteAthleteDetailsCtrl";
 import verifyAthleteEmailIdCtrl from "../controllers/athlete-registration/verifyAthleteEmailIdCtrl";
 import updateFormStatusCtrl from "../controllers/athlete-registration/updateFormStatusCtrl";
+import { exportAthletesCtrl } from "../controllers/athlete-registration/exportToExcelCtrl";
 
 const athleteRegistrationRouter = Router();
 
@@ -68,4 +69,10 @@ athleteRegistrationRouter.post(
   updateFormStatusCtrl,
 );
 
+// 7. Export data in excel format
+athleteRegistrationRouter.get(
+  "/export-data",
+  authorization("ADMIN"),
+  exportAthletesCtrl,
+);
 export default athleteRegistrationRouter;

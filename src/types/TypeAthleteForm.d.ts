@@ -7,21 +7,6 @@ export interface TypeAthleteForm {
   emailAddress: string;
   contactNumber: string;
   alternateMobileNo: string;
-  nationality: string;
-  bloodGroup:
-    | "A_POSITIVE"
-    | "A_NEGATIVE"
-    | "B_POSITIVE"
-    | "B_NEGATIVE"
-    | "A_B_POSITIVE"
-    | "A_B_NEGATIVE"
-    | "O_POSITIVE"
-    | "O_NEGATIVE"
-    | "NOT_KNOWN";
-
-  height?: string;
-  weight?: string;
-  governmentIdProofNo?: string;
   address: string;
   pinCode: string;
   stateOrProvince: string;
@@ -36,3 +21,5 @@ export interface TypeAthleteForm {
     position?: string;
   }[];
 }
+
+

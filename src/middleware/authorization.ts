@@ -27,28 +27,51 @@ const authorization = (...allowedRoles: JwtPayload["userRole"][]) => {
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const token = req.cookies?.authorization_token;
+    const userCookie = req.cookies?.user_authorization_token;
+    const adminCookie = req.cookies?.admin_authorization_token;
+
+    // 🎯 FIX: Select the cookie dynamically based on what the route demands
+    let token: string | undefined;
+
+    if (allowedRoles.includes("ADMIN") && adminCookie) {
+      token = adminCookie;
+    } else if (allowedRoles.includes("USER") && userCookie) {
+      token = userCookie;
+    } else {
+      // Fallback if the specific cookie isn't there, try the other one
+      token = adminCookie ?? userCookie;
+    }
 
     // 1️⃣ Token missing
-    if (!token) return authRequireRes(res, "Authorization token is missing.");
+    if (!token) {
+      authRequireRes(res, "Authorization token is missing.");
+      return;
+    }
+
+    // Helper to clear the correct cookie dynamically
+    const clearAuthCookie = () => {
+      if (userCookie) res.clearCookie("user_authorization_token", cookieOption);
+      if (adminCookie)
+        res.clearCookie("admin_authorization_token", cookieOption);
+    };
 
     try {
       // 2️⃣ Verify token
       const decoded = jwt.verify(token, envConfig.jwt_secret) as JwtPayload;
 
       if (!decoded?.userId || !decoded?.userRole) {
-        return authRequireRes(
-          res,
-          "Invalid authorization token. Or if expired, please login again.",
-        );
+        clearAuthCookie();
+        authRequireRes(res, "Invalid authorization token.");
+        return;
       }
 
       // 3️⃣ Role not permitted
       if (!allowedRoles.includes(decoded.userRole)) {
-        return forbiddenRes(
+        forbiddenRes(
           res,
           "You do not have permission to access this resource.",
         );
+        return;
       }
 
       // 4️⃣ Find user by ID and role
@@ -57,32 +80,36 @@ const authorization = (...allowedRoles: JwtPayload["userRole"][]) => {
       });
 
       if (!user) {
-        res.clearCookie("authorization_token", cookieOption);
-        return unauthorizedRes(
-          res,
-          "You are not authorized to access this resource.",
-        );
+        clearAuthCookie();
+        unauthorizedRes(res, "You are not authorized to access this resource.");
+        return;
       }
 
       // 5️⃣ Attach user to request
       req.currentUser = user;
       next();
     } catch (error) {
-      // 6️⃣ Handle JWT errors
+      // 6️⃣ Handle JWT errors cleanly
       if (error instanceof jwt.TokenExpiredError) {
-        res.clearCookie("authorization_token", cookieOption);
-        return unauthorizedRes(res, "Session expired. Please log in again.");
+        // Only clear the cookie we actually tried to use
+        if (token === adminCookie)
+          res.clearCookie("admin_authorization_token", cookieOption);
+        if (token === userCookie)
+          res.clearCookie("user_authorization_token", cookieOption);
+
+        unauthorizedRes(res, "Session expired. Please log in again.");
+        return;
       }
 
       if (error instanceof jwt.JsonWebTokenError) {
-        res.clearCookie("authorization_token", cookieOption);
-        return authRequireRes(res, "Invalid authentication token.");
+        authRequireRes(res, "Invalid authentication token.");
+        return;
       }
 
       console.error("Authorization error:", error);
-      return <any>res.status(500).json({ message: "Internal server error." });
+      res.status(500).json({ message: "Internal server error." });
+      return;
     }
   };
 };
-
 export default authorization;
