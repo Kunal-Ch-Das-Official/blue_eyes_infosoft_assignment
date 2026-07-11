@@ -17,8 +17,6 @@ const Step5Documents = () => {
   const profileInputRef = useRef(null);
 
   // --- COMPRESSION UTILITIES ---
-
-  // Compresses image files to fit under 1MB target by adjusting canvas quality layers
   const compressImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -31,7 +29,6 @@ const Step5Documents = () => {
           let width = img.width;
           let height = img.height;
 
-          // Scale down image dimensions if excessively massive to reduce initial data footprint
           const MAX_DIMENSION = 2000;
           if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
             if (width > height) {
@@ -48,7 +45,6 @@ const Step5Documents = () => {
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert canvas frame output down using an optimized 0.7 compression ratio layer
           canvas.toBlob(
             (blob) => {
               if (blob) {
@@ -70,7 +66,6 @@ const Step5Documents = () => {
     });
   };
 
-  // Handles individual file selection pipelines (PDF limits / Image compression routing)
   const processFile = async (file) => {
     const sizeInMB = file.size / (1024 * 1024);
 
@@ -94,7 +89,6 @@ const Step5Documents = () => {
   };
 
   // --- ACTIONS ---
-
   const handleProfileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -102,7 +96,7 @@ const Step5Documents = () => {
     setCompressionLoading(true);
     setErrorMessage("");
     try {
-      const processed = await processFile(file, "profile");
+      const processed = await processFile(file);
       setProfilePhoto(processed);
     } catch (err) {
       setErrorMessage(err.message);
@@ -138,13 +132,13 @@ const Step5Documents = () => {
     setCompressionLoading(true);
     setErrorMessage("");
     try {
-      const processed = await processFile(file, "document");
+      const processed = await processFile(file);
       const updatedDocs = [...playerDocuments];
       updatedDocs[index] = processed;
       setPlayerDocuments(updatedDocs);
     } catch (err) {
       setErrorMessage(err.message);
-      e.target.value = ""; // Reset standard file reference on rejection
+      e.target.value = "";
     } finally {
       setCompressionLoading(false);
     }
@@ -152,7 +146,6 @@ const Step5Documents = () => {
 
   return (
     <div className="space-y-8">
-      {/* Universal Message Banner */}
       <div className="border-b border-gray-100 pb-4">
         <h2 className="text-xl font-semibold text-gray-800">
           Document Uploads
@@ -282,41 +275,62 @@ const Step5Documents = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-           <div>
-                   <TextInput
-                    inputLabel="Document Identity Title"
-                    fieldId={`docTitle-${index}`}
-                    values={fileTitles[index] || ""}
-                    placeHolderText="e.g., Passport, Birth Certificate"
-                    isRequired={true}
-                    textValue={(val) => handleTitleChange(index, val)}
-                  />
-           </div>
+                  <div>
+                    <TextInput
+                      inputLabel="Document Identity Title"
+                      fieldId={`docTitle-${index}`}
+                      values={fileTitles[index] || ""}
+                      placeHolderText="e.g., Passport, Birth Certificate"
+                      isRequired={true}
+                      textValue={(val) => handleTitleChange(index, val)}
+                    />
+                  </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-gray-600">
                       File Attachment <span className="text-rose-500">*</span>
                     </label>
-                    <div className="relative">
-                      <input
-                        type="file"
-                        required={!doc}
-                        accept="image/*,application/pdf"
-                        onChange={(e) => handleDocumentFileChange(index, e)}
-                        className="
-                          w-full rounded-xl border border-gray-300 bg-white
-                          px-3 py-1.5 text-xs text-gray-500 shadow-sm
-                          file:mr-4 file:py-1 file:px-3 file:rounded-lg
-                          file:border-0 file:text-xs file:font-semibold
-                          file:bg-blue-50 file:text-blue-600
-                          hover:file:bg-blue-100 transition-all outline-none
-                        "
-                      />
-                    </div>
-                    {doc && (
-                      <span className="text-[11px] text-green-600 font-semibold flex items-center gap-1 ml-1 mt-0.5">
-                        ✓ Attached: {(doc.size / (1024 * 1024)).toFixed(2)} MB
-                      </span>
+
+                    {/* 🛠️ FIX: Conditional UI rendering to display existing files preserved in Zustand */}
+                    {doc ? (
+                      <div className="flex items-center justify-between border border-green-200 bg-green-50/30 rounded-xl px-3 py-2 text-xs shadow-sm">
+                        <div className="truncate pr-2">
+                          <p className="font-medium text-gray-700 truncate">
+                            {doc.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {(doc.size / (1024 * 1024)).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedDocs = [...playerDocuments];
+                            updatedDocs[index] = null; // Clear from store to force showing input file field
+                            setPlayerDocuments(updatedDocs);
+                          }}
+                          className="text-[11px] font-bold text-blue-600 hover:text-blue-800 shrink-0 bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm"
+                        >
+                          Replace File
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          required={true}
+                          accept="image/*,application/pdf"
+                          onChange={(e) => handleDocumentFileChange(index, e)}
+                          className="
+                            w-full rounded-xl border border-gray-300 bg-white
+                            px-3 py-1.5 text-xs text-gray-500 shadow-sm
+                            file:mr-4 file:py-1 file:px-3 file:rounded-lg
+                            file:border-0 file:text-xs file:font-semibold
+                            file:bg-blue-50 file:text-blue-600
+                            hover:file:bg-blue-100 transition-all outline-none
+                          "
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

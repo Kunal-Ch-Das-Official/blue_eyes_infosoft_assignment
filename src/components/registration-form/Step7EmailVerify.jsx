@@ -180,7 +180,7 @@ const Step7EmailVerify = () => {
 
   return (
     <main className="flex items-center justify-center min-h-[50vh] w-full p-4">
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full">
         {isSubmitting && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm transition-all duration-200">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0f427d] border-t-transparent" />
