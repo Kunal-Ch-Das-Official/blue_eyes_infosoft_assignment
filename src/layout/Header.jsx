@@ -1,33 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import apiUrl from "../config/api.conf";
 import envConfig from "../config/env.conf";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import InternalErrorRes from "../utils/toast/InternalErrorRes";
 import Confirmation from "../utils/modals/Confirmation";
+import { useAuthStore } from "../stores/useAuthStore";
 
 const Header = () => {
   const navigate = useNavigate();
+  const {fullName} = useAuthStore()
   const [logoutConfirmation, setLogoutConfirmation] = useState(false);
   const [isOpen, setIsOpen] = useState(false); // Mobile menu state
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // Profile dropdown state
-  const dropdownRef = useRef(null);
 
-  // Close profile dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsProfileOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
+
 
   const handleConfirmSignout = async () => {
     try {
       const response = await apiUrl.post(
-        envConfig.EXISTING_USER_LOGOUT_URL,
+        envConfig.EXISTING_ADMIN_LOGOUT_URL,
         {},
         {
           withCredentials: true,
@@ -72,22 +64,27 @@ const Header = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="shrink-0">
-              <a
-                href="#"
+              <Link
+                to="/dashboard"
                 className="text-xl font-bold tracking-wider text-indigo-400 hover:text-indigo-300 transition duration-200"
               >
-                Sports Club
-              </a>
+                Sports Club Admin
+              </Link>
+              <br />
+              <div className="flex gap-1 items-center flex-row">
+                <p className="text-xs">Access:</p>
+                <p className="text-xs text-yellow-400">{fullName}</p>
+              </div>
             </div>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex space-x-8 font-medium">
-              <a
-                href="#home"
+              <Link
+                to="/dashboard"
                 className="hover:text-indigo-400 transition duration-200"
               >
-                Home
-              </a>
+                Dashboard
+              </Link>
               <a
                 href="#about"
                 className="hover:text-indigo-400 transition duration-200"
@@ -111,49 +108,18 @@ const Header = () => {
             {/* Profile Dropdown & Mobile Menu Button */}
             <div className="flex items-center space-x-4">
               {/* Profile Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="cursor-pointer flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition duration-200"
-                >
-                  <span className="sr-only">Open user menu</span>
-                  <img
-                    className="h-9 w-9 rounded-full border-2 border-indigo-500 object-cover"
-                    src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256"
-                    alt="User profile"
-                  />
-                </button>
-
-                {/* Dropdown Menu */}
-                {isProfileOpen && (
-                  <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none transition-all ease-out duration-100">
-                    <a
-                      href="#profile"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-200 hover:bg-indigo-600 hover:text-white transition duration-150"
-                    >
-                      Profile
-                    </a>
-                    <a
-                      href="#my-data"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-200 hover:bg-indigo-600 hover:text-white transition duration-150"
-                    >
-                      My Data
-                    </a>
-                    <hr className="border-slate-700 my-1" />
-                    <button
+              <div className="relative">
+                   <button
                       onClick={() => {
-                        setIsProfileOpen(false);
                         setLogoutConfirmation((prev) => !prev);
                         console.log("Logging out...");
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white transition duration-150"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-400 rounded-full hover:bg-red-600 hover:text-white transition duration-150"
                     >
                       Logout
                     </button>
-                  </div>
-                )}
+
+  
               </div>
 
               {/* Mobile Menu Button */}

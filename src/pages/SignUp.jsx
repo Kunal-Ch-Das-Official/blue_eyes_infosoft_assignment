@@ -105,7 +105,7 @@ const SignUp = () => {
 
         // send request to server (example)
         const response = await apiUrl.post(
-          `${envConfig.NEW_USER_REGISTRATION_URL}`,
+          `${envConfig.NEW_ADMIN_REGISTRATION_URL}?role=ADMIN`,
           newRegistrationData,
         );
 
@@ -126,7 +126,7 @@ const SignUp = () => {
           setEmailIdGlobal(emailAddress);
           setPasswordGlobal(password);
           setConfirmPasswordGlobal(confirmPassword);
-          navigate(`/verify-new-users-email/${emailAddress}`);
+          navigate(`/verify-new-admin-email/${emailAddress}`);
         }
       } catch (error) {
         InternalErrorRes(error);

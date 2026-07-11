@@ -68,7 +68,7 @@ const SignIn = () => {
         apiUrl.defaults.withCredentials = true;
 
         const response = await apiUrl.post(
-          envConfig.EXISTING_USER_LOGIN_URL,
+          `${envConfig.EXISTING_ADMIN_LOGIN_URL}?role=ADMIN`,
           reqBody,
         );
 
@@ -80,7 +80,7 @@ const SignIn = () => {
               <p className="text-xs text-gray-500">{response.data.details}</p>
             </div>,
           );
-          navigate("/home");
+          navigate("/dashboard");
         } else {
           toast.error(
             <div>

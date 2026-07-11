@@ -5,7 +5,7 @@ import NProgress from "nprogress";
 import Header from "../layout/Header";
 import Footer from "../layout/Footer";
 
-const PrivateWeb = () => {
+const PrivateDashboard = () => {
   const location = useLocation();
 
   useEffect(() => {
@@ -31,4 +31,4 @@ const PrivateWeb = () => {
   );
 };
 
-export default PrivateWeb;
+export default PrivateDashboard;

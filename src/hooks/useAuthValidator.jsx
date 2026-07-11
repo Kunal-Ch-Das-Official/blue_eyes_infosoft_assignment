@@ -15,7 +15,7 @@ export const useAuthValidator = () => {
 
     const checkAuth = async () => {
       try {
-        const res = await apiUrl.get(envConfig.FETCH_LOGGED_IN_USER_URL, {
+        const res = await apiUrl.get(envConfig.FETCH_LOGGED_IN_ADMIN_URL, {
           withCredentials: true,
           signal: controller.signal,
         });
@@ -24,15 +24,20 @@ export const useAuthValidator = () => {
 
         const data = res?.data;
 
-        // Some "who am I" endpoints return 200 with an empty/null body
-        // instead of a proper 401 — treat that as "not authenticated"
-        // rather than silently doing nothing.
-        if (res.status >= 200 && res.status < 300 && data && data.id) {
-          setUserId(data.id);
-          setFullName(data.fullName ?? "");
-          setEmail(data.emailId ?? "");
-          setRole(data.role ?? null);
-          setAuthenticated(true);
+        if (
+          res.status >= 200 &&
+          res.status < 300 &&
+          data &&
+          data.id &&
+          data.role
+        ) {
+          if (data.role === "ADMIN") {
+            setUserId(data.id);
+            setFullName(data.fullName ?? "");
+            setEmail(data.emailId ?? "");
+            setRole(data.role ?? null);
+            setAuthenticated(true);
+          }
         } else {
           if (import.meta.env.VITE_NODE_ENV !== "production") {
             console.warn(

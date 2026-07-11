@@ -8,7 +8,7 @@ import InternalErrorRes from "../utils/toast/InternalErrorRes";
 import OtpVerificationForm from "../components/authentication/OtpVerificationForm";
 import Notice from "../utils/modals/Notice";
 
-const NewUsersEmailVerification = () => {
+const AdminMailVerification = () => {
   const navigate = useNavigate();
   const { fullName, email, password, confirmPassword } = useSignUpDataStore();
   const [otp, setOtp] = useState(Array(6).fill(""));
@@ -25,7 +25,7 @@ const NewUsersEmailVerification = () => {
     };
     try {
       const response = await apiUrl.post(
-        envConfig.NEW_USER_EMAIL_VERIFICATION_URL,
+        envConfig.NEW_ADMIN_EMAIL_VERIFICATION_URL,
         reqBody,
       );
       if (response.data) {
@@ -146,4 +146,4 @@ const NewUsersEmailVerification = () => {
   );
 };
 
-export default NewUsersEmailVerification;
+export default AdminMailVerification;
