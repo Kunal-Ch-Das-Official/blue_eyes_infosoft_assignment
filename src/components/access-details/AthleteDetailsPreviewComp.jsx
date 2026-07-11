@@ -41,13 +41,19 @@ const AthleteDetailsPreviewComp = ({ playerData }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+    const statusStyles = {
+    APPLIED: "bg-amber-50 text-amber-700 border-amber-200",
+    APPROVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    REJECTED: "bg-rose-50 text-rose-700 border-rose-200",
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-700 font-medium antialiased p-6 md:p-12 selection:bg-emerald-100">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Premium Header / Hero Banner */}
         <div className="relative overflow-hidden bg-white border border-zinc-200/80 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 shadow-sm">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
+ 
           {/* Avatar Container */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-linear-to-r from-emerald-500 to-teal-500 rounded-xl blur opacity-15 group-hover:opacity-25 transition duration-350" />
@@ -73,6 +79,10 @@ const AthleteDetailsPreviewComp = ({ playerData }) => {
               <span className="text-xs tracking-wider uppercase px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-500 border border-zinc-200">
                 {playerData.sports || "N/A"}
               </span>
+                  <span className={`${statusStyles[playerData.formStatus]} 
+                    text-xs tracking-wider uppercase px-2.5 py-1 rounded-md border border-zinc-200`}>
+            {playerData.formStatus}
+          </span>
             </div>
 
             <h1 className="text-2xl md:text-3xl text-zinc-900 tracking-tight font-medium">
@@ -86,7 +96,11 @@ const AthleteDetailsPreviewComp = ({ playerData }) => {
                 {playerData.id ? `${playerData.id.slice(0, 8)}...` : "N/A"}
               </span>
             </p>
+
+        
           </div>
+
+     
         </div>
 
         {/* Content Breakdown Grid */}

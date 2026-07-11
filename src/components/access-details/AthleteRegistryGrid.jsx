@@ -1,5 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { AlertTriangle, Loader2, RefreshCw, LayoutGrid } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  AlertTriangle,
+  Loader2,
+  RefreshCw,
+  LayoutGrid,
+  Search,
+  FileSpreadsheet,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import apiUrl from "../../config/api.conf";
 import envConfig from "../../config/env.conf";
@@ -9,55 +16,75 @@ export default function AthleteRegistryGrid() {
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isStatusChanged, setIsStatusChanged] = useState(false)
 
   // Core fetch execution logic
   const fetchAthletesData = useCallback(async () => {
     setLoading(true);
     setError(null);
-      try {
-        setLoading(true);
-        const response = await apiUrl.get(envConfig.FETCH_PLAYERS_DETAILS_URL, {
-          withCredentials: true,
-        });
+    try {
+      const response = await apiUrl.get(envConfig.FETCH_PLAYERS_DETAILS_URL, {
+        withCredentials: true,
+      });
 
-        if (!response.data) {
-          return toast.error(
-            <div>
-              <strong className="text-rose-600">Failed!</strong>
-              <p className="text-xs text-gray-800">
-                Something went wrong! Response were not coming. Please try
-                again.
-              </p>
-            </div>,
-          );
-        } else {
-          setAthletes(response.data);
-        }
-      } catch (error) {
-        return toast.error(
+      if (!response.data) {
+        const fallbackMsg = "Something went wrong! Response was empty.";
+        setError(fallbackMsg);
+        toast.error(
           <div>
-            <strong className="text-rose-600">Failed.</strong>
+            <strong className="text-rose-600">Failed!</strong>
             <p className="text-xs text-gray-800">
-              {error.message} || Something went wrong! Response were not coming.
-              Please try again.
+              {fallbackMsg} Please try again.
             </p>
           </div>,
         );
-      } finally {
-        setLoading(false);
+      } else {
+        setAthletes(response.data);
       }
+    } catch (err) {
+      const errMsg =
+        err.message || "Something went wrong! Response were not coming.";
+      setError(errMsg);
+      toast.error(
+        <div>
+          <strong className="text-rose-600">Failed.</strong>
+          <p className="text-xs text-gray-800">{errMsg} Please try again.</p>
+        </div>,
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const fetchCall = async () => {
-      await fetchAthletesData();
-    };
-    fetchCall();
-  }, [fetchAthletesData]);
+    const initFetchCall = async () => await fetchAthletesData();
+    initFetchCall();
+  }, [fetchAthletesData, isStatusChanged]);
 
-  // Action callback stubs
-  const handleUpdateStatus = (athlete) => {
-    alert(`Status modal hook activated for: ${athlete.playerName}`);
+  // Operational Search Filter logic
+  const filteredAthletes = useMemo(() => {
+    if (!searchQuery.trim()) return athletes;
+    return athletes.filter(
+      (athlete) =>
+        athlete?.playerName
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        athlete?.formStatus
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        athlete?.contactNumber
+          ?.toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        athlete?.currentAge?.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [athletes, searchQuery]);
+
+
+  const handleExportExcel = () => {
+    toast.info("Initializing XLSX export matrix...");
+    // Future integration: use 'xlsx' package to download filteredAthletes data
+    console.log("Exporting data to Excel...", filteredAthletes);
   };
 
   // --- LOADING FALLBACK (Premium Skeleton Look) ---
@@ -95,45 +122,78 @@ export default function AthleteRegistryGrid() {
     );
   }
 
-  // --- EMPTY STATE FALLBACK ---
-  if (!athletes || athletes.length === 0) {
-    return (
-      <div className="w-full text-center py-20 border border-dashed border-slate-900 rounded-2xl text-slate-500">
-        <LayoutGrid size={32} className="mx-auto mb-3 opacity-40" />
-        <p className="text-sm">
-          Zero records match current registered parameters.
-        </p>
-      </div>
-    );
-  }
-
   // --- RENDER SUCCESS GRID ---
   return (
-    <div className="space-y-6">
-      {/* Title Count Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase font-bold tracking-widest text-slate-500">
-          Live Roster Profiles ({athletes.length})
-        </span>
-        <button
-          onClick={fetchAthletesData}
-          className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-xl transition-colors"
-          title="Refresh Feed"
-        >
-          <RefreshCw size={14} />
-        </button>
+    <div className="space-y-6 px-8 py-6 mt-20">
+      {/* Premium Controls Toolbar */}
+      <div
+        className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between
+      border-b border-slate-300/60 pb-6"
+      >
+        {/* Search Bar (Top Left) */}
+        <div className="relative max-w-md w-full group">
+          <Search
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 
+            group-focus-within:text-indigo-400 transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search roster by athlete name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-white hover:bg-slate-50 border
+             border-slate-300 focus:border-indigo-500/50 text-slate-800 placeholder-slate-500 text-sm pl-11 pr-4 py-2.5 rounded-xl transition-all outline-none focus:ring-2 focus:ring-indigo-500/10"
+          />
+        </div>
+
+        {/* Action Controls (Top Right) */}
+        <div className="flex items-center justify-end gap-3 self-end sm:self-auto">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 text-xs font-medium
+             bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-600 border border-green-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-emerald-950/20"
+          >
+            <FileSpreadsheet size={16} /> Export Data XLSX
+          </button>
+
+          <button
+            onClick={fetchAthletesData}
+            className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 rounded-xl transition-colors"
+            title="Refresh Feed"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Grid Container */}
-      <div className="mt-20 mx-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {athletes.map((athlete, index) => (
-          <AthleteCard
-            key={athlete?.competitionPlayed?.[0]?.id || index}
-            athlete={athlete}
-            onUpdateStatus={handleUpdateStatus}
-          />
-        ))}
+      {/* Meta Counter Label */}
+      <div className="flex items-center justify-between pt-2">
+        <span className="text-sm font-bold tracking-widest text-slate-500">
+          Live Roster Profiles ({filteredAthletes.length})
+        </span>
       </div>
+
+      {/* Empty State Fallback (Now responds conditionally to filtering too) */}
+      {filteredAthletes.length === 0 ? (
+        <div className="w-full text-center py-20 border border-dashed border-slate-800 rounded-2xl text-slate-500">
+          <LayoutGrid size={32} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">
+            Zero records match current registered parameters.
+          </p>
+        </div>
+      ) : (
+        /* Grid Container */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAthletes.map((athlete, index) => (
+            <AthleteCard
+              key={athlete?.competitionPlayed?.[0]?.id || index}
+              athlete={athlete}
+              setIsStatusChanged={setIsStatusChanged}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
