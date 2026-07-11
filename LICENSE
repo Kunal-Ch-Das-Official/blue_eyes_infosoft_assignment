@@ -1,0 +1,23 @@
+LIMITED USE TECHNICAL EVALUATION LICENSE
+Copyright (c) 2026 Kunal Chandra Das
+
+1. Purpose & Scope
+   This software (the "Software") is provided solely and exclusively for technical evaluation, interview screening, and recruitment assessment purposes.
+
+2. Permitted Use
+   You are granted a limited, non-exclusive, non-transferable, and revocable license to:
+
+Review, execute, compile, and test the Software locally or in a sandboxed staging environment.
+
+Assess the architectural quality, coding style, and technical proficiency of the author.
+
+3. Prohibited Use (Strict Production Ban)
+   Under no circumstances shall this Software be used in a production-grade environment.
+   You are strictly prohibited from:
+
+Using the Software, or any portion thereof, to power commercial operations, live applications, or public-facing production systems.
+
+Distributing, selling, sublicensing, or incorporating the Software into any commercial product or enterprise platform.
+
+4. Disclaimer of Warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR (KUNAL CHANDRA DAS) BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

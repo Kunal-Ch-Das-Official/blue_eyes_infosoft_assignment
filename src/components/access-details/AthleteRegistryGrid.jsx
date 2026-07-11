@@ -17,7 +17,7 @@ export default function AthleteRegistryGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isStatusChanged, setIsStatusChanged] = useState(false)
+  const [isStatusChanged, setIsStatusChanged] = useState(false);
 
   // Core fetch execution logic
   const fetchAthletesData = useCallback(async () => {
@@ -80,13 +80,61 @@ export default function AthleteRegistryGrid() {
     );
   }, [athletes, searchQuery]);
 
+  // Download Excel
+  const handleExportExcel = async () => {
+    try {
+      toast.info("Compiling registry roster database...");
 
-  const handleExportExcel = () => {
-    toast.info("Initializing XLSX export matrix...");
-    // Future integration: use 'xlsx' package to download filteredAthletes data
-    console.log("Exporting data to Excel...", filteredAthletes);
+      const response = await apiUrl.get(envConfig.EXPORT_DATA_IN_EXCEL_URL, {
+        withCredentials: true,
+        responseType: "blob", // Correctly instructs Axios to stream binary buffers
+      });
+
+      // Guard Clause: Ensure server returned a successful status code
+      if (response.status !== 200) {
+        throw new Error("Server failed to compile spreadsheet matrix.");
+      }
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      // Generate a temporary browser memory allocation string pointing to the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+
+      // Apply structured filename conventions with current ISO timestamps
+      const dateStamp = new Date().toISOString().split("T")[0];
+      link.setAttribute(
+        "download",
+        `athlete_registry_roster_${dateStamp}.xlsx`,
+      );
+
+      // Mount to DOM, trigger native OS downloader, and unmount instantly
+      document.body.appendChild(link);
+      link.click();
+
+      // Memory Leak Cleanup Optimization
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Excel sheet downloaded successfully.");
+    } catch (error) {
+      console.error("XLSX Pipeline Failure:", error);
+
+      // ✅ FIX: Swapped InternalErrorRes for a valid toast call
+      toast.error(
+        <div>
+          <strong className="text-rose-600">Download Failed</strong>
+          <p className="text-xs text-gray-700">
+            {error.message ||
+              "Unable to extract ledger data streaming buffers."}
+          </p>
+        </div>,
+      );
+    }
   };
-
   // --- LOADING FALLBACK (Premium Skeleton Look) ---
   if (loading) {
     return (

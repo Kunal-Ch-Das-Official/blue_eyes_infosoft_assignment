@@ -19,18 +19,17 @@ const SignUp = () => {
   const registerFormRef = useRef(null);
   const navigate = useNavigate();
 
-  // 2. Full Name State ------
+  // State Management ------
   const [fullName, setFullName] = useState("");
-
-  // 3. Email Address State ------
   const [emailAddress, setEmailAddress] = useState("");
   const [isEmailNotValid, setIsEmailNotValid] = useState(false);
-
-  //  4. Password State -----
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordNotValid, setIsPasswordNotValid] = useState(false);
   const [isStrongPassword, setIsStrongPassword] = useState(false);
+
+  // 1. Added loading state
+  const [isLoading, setIsLoading] = useState(false);
 
   // Sign up handler
   const handleManualSignup = async (event) => {
@@ -50,13 +49,12 @@ const SignUp = () => {
       errorMessage.hasError = true;
       errorMessage.message = [
         ...errorMessage.message,
-        "Seems Name field is missing. Full name is require to proceed.",
+        "Seems Name field is missing. Full name is required to proceed.",
       ];
     }
 
     // 3. Email syntax validation
     const isEmailSyntaxValid = primaryEmailSyntaxCheck(emailAddress);
-
     if (!isEmailSyntaxValid.ok) {
       setIsEmailNotValid(true);
       errorMessage.hasError = true;
@@ -66,13 +64,13 @@ const SignUp = () => {
       ];
     }
 
-    // 4. Passwords match?
+    // 4. Passwords match? (Fixed copy-paste text bug here)
     if (password !== confirmPassword) {
       setIsPasswordNotValid(true);
       errorMessage.hasError = true;
       errorMessage.message = [
         ...errorMessage.message,
-        "Seems email id syntax is invalid.",
+        "Passwords do not match. Please verify your entries.",
       ];
     }
 
@@ -85,16 +83,16 @@ const SignUp = () => {
       ];
     }
 
-    // If any error → stop
+    // If any validation error → stop
     if (errorMessage.hasError === true) {
-      // Display error message
       await showWarningToastQueue(errorMessage.message);
-
       return;
     } else {
       // -------------------------
       // 🚀 ALL VALID → Submit Now
       // -------------------------
+      setIsLoading(true); // 2. Trigger loading indicator
+
       try {
         const newRegistrationData = {
           fullName: fullName,
@@ -103,7 +101,6 @@ const SignUp = () => {
           confirmPassword: confirmPassword,
         };
 
-        // send request to server (example)
         const response = await apiUrl.post(
           `${envConfig.NEW_ADMIN_REGISTRATION_URL}?role=ADMIN`,
           newRegistrationData,
@@ -116,7 +113,7 @@ const SignUp = () => {
             <div>
               <strong className="text-rose-600">Failed!</strong>
               <p className="text-xs text-gray-500">
-                Unable to send otp on your given email address. Please check the
+                Unable to send OTP to your given email address. Please check the
                 email and try again.
               </p>
             </div>,
@@ -126,10 +123,28 @@ const SignUp = () => {
           setEmailIdGlobal(emailAddress);
           setPasswordGlobal(password);
           setConfirmPasswordGlobal(confirmPassword);
+
+          toast.success("Registration initiated! Please verify your email.");
           navigate(`/verify-new-admin-email/${emailAddress}`);
         }
       } catch (error) {
+        // 3. Improved error parsing to capture dynamic API messages (e.g., "Email already exists")
+        const serverError =
+          error.response?.data?.message ||
+          error.message ||
+          "An unexpected registration error occurred.";
+
+        toast.error(
+          <div>
+            <strong className="text-rose-600">Registration Failed</strong>
+            <p className="text-xs text-gray-500">{serverError}</p>
+          </div>,
+        );
+
         InternalErrorRes(error);
+      } finally {
+        // 4. Turn off loading state no matter what happens
+        setIsLoading(false);
       }
     }
   };
@@ -146,6 +161,7 @@ const SignUp = () => {
         isEmailNotValid={isEmailNotValid}
         isPasswordError={isPasswordNotValid}
         handleManualSignup={handleManualSignup}
+        isLoading={isLoading} // 5. Forward loading prop down to form UI
       />
     </main>
   );

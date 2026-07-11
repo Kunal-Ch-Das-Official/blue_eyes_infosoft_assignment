@@ -3,7 +3,6 @@ import { Outlet, useLocation } from "react-router-dom";
 import NProgress from "nprogress";
 
 import Header from "../layout/Header";
-import Footer from "../layout/Footer";
 
 const PrivateDashboard = () => {
   const location = useLocation();
@@ -25,8 +24,6 @@ const PrivateDashboard = () => {
       <main className="flex-1">
         <Outlet />
       </main>
-
-      <Footer />
     </div>
   );
 };

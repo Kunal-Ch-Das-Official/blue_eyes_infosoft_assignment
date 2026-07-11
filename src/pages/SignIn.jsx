@@ -12,10 +12,13 @@ const SignIn = () => {
   const location = useLocation();
   const message = location.state?.message;
   const navigate = useNavigate();
+
   const [emailId, setEmailId] = useState("");
   const [password, setPassword] = useState("");
   const [isStrongPassword, setIsStrongPassword] = useState(false);
   const [isEmailNotValid, setIsEmailNotValid] = useState(false);
+  // 1. Added loading state
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -25,8 +28,6 @@ const SignIn = () => {
           <p className="text-xs text-gray-800">{message}</p>
         </div>,
       );
-
-      // Clear the state so effect won't re-run
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [message, navigate, location.pathname]);
@@ -38,6 +39,7 @@ const SignIn = () => {
       hasError: false,
       message: [],
     };
+
     if (!isStrongPassword) {
       errorMessage.hasError = true;
       errorMessage.message = [
@@ -45,8 +47,8 @@ const SignIn = () => {
         "Password is not strong, please provide a strong password.",
       ];
     }
-    const isEmailSyntaxValid = primaryEmailSyntaxCheck(emailId);
 
+    const isEmailSyntaxValid = primaryEmailSyntaxCheck(emailId);
     if (!isEmailSyntaxValid) {
       setIsEmailNotValid(true);
       errorMessage.hasError = true;
@@ -59,6 +61,9 @@ const SignIn = () => {
     if (errorMessage.hasError === true) {
       await showWarningToastQueue(errorMessage.message);
     } else {
+      // 2. Start loading before making the API request
+      setIsLoading(true);
+
       try {
         const reqBody = {
           emailId: emailId,
@@ -72,25 +77,47 @@ const SignIn = () => {
           reqBody,
         );
 
-        console.log(response);
         if (response.data.message === "Successful!") {
           toast.success(
             <div>
               <strong className="text-green-600">Login Successful!</strong>
-              <p className="text-xs text-gray-500">{response.data.details}</p>
+              <p className="text-xs text-gray-500">
+                {response.data.details || "Welcome back!"}
+              </p>
             </div>,
           );
           navigate("/dashboard");
         } else {
+          // Fallback if status is 200 but message is not "Successful!"
           toast.error(
             <div>
               <strong className="text-rose-600">Failed!</strong>
-              <p className="text-xs text-gray-500">User is not verified</p>
+              <p className="text-xs text-gray-500">
+                {response.data.message || "User is not verified"}
+              </p>
             </div>,
           );
+          setIsLoading(false);
         }
       } catch (error) {
+        // 3. Improved error feedback: Extract error message from server response if available
+        const serverError =
+          error.response?.data?.message ||
+          error.message ||
+          "An unexpected error occurred.";
+
+        toast.error(
+          <div>
+            <strong className="text-rose-600">Login Failed</strong>
+            <p className="text-xs text-gray-500">{serverError}</p>
+          </div>,
+        );
+
+        // Keep your original catch-all utility if it handles other side effects
         InternalErrorRes(error);
+      } finally {
+        // 4. Always turn off loading state when done (unless navigated away)
+        setIsLoading(false);
       }
     }
   };
@@ -103,6 +130,7 @@ const SignIn = () => {
         setIsStrongPassword={setIsStrongPassword}
         onsubmitHandler={handleManualSignIn}
         isEmailNotValid={isEmailNotValid}
+        isLoading={isLoading} // 5. Pass the loading state down to the form component
       />
     </main>
   );

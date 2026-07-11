@@ -24,48 +24,38 @@ export const useAuthValidator = () => {
 
         const data = res?.data;
 
+        // CRITICAL FIX: If the backend returns a USER role on the ADMIN app,
+        // treat it as an unauthenticated state for this portal.
         if (
           res.status >= 200 &&
           res.status < 300 &&
-          data &&
-          data.id &&
-          data.role
+          data?.id &&
+          data?.role === "ADMIN"
         ) {
-          if (data.role === "ADMIN") {
-            setUserId(data.id);
-            setFullName(data.fullName ?? "");
-            setEmail(data.emailId ?? "");
-            setRole(data.role ?? null);
-            setAuthenticated(true);
-          }
+          setUserId(data.id);
+          setFullName(data.fullName ?? "");
+          setEmail(data.emailId ?? "");
+          setRole(data.role);
+          setAuthenticated(true);
         } else {
-          if (import.meta.env.VITE_NODE_ENV !== "production") {
-            console.warn(
-              "[useAuthValidator] Auth check returned an unexpected payload:",
-              res.status,
-              data,
-            );
-          }
-          setAuthenticated(false);
+          // If role is "USER", completely wipe the state
+          handleAuthFailure();
         }
       } catch (err) {
+        console.log(err);
         if (!mounted) return;
-
-        // Don't log if we intentionally aborted on unmount
-        if (err?.name !== "CanceledError" && err?.code !== "ERR_CANCELED") {
-          if (import.meta.env.VITE_NODE_ENV !== "production") {
-            console.error(
-              "[useAuthValidator] Auth check failed:",
-              err?.response?.status,
-              err?.response?.data ?? err?.message,
-            );
-          }
-        }
-
-        setAuthenticated(false);
+        handleAuthFailure();
       } finally {
         if (mounted) setLoading(false);
       }
+    };
+
+    const handleAuthFailure = () => {
+      setUserId(null);
+      setFullName("");
+      setEmail("");
+      setRole(null);
+      setAuthenticated(false);
     };
 
     checkAuth();
@@ -74,8 +64,7 @@ export const useAuthValidator = () => {
       mounted = false;
       controller.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // setters from a Zustand store are stable; re-running per render isn't needed
+  }, [setUserId, setFullName, setEmail, setRole]);
 
   return {
     loading,
